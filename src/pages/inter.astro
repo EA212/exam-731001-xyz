@@ -1,0 +1,411 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Astro Interactive">
+  <main>
+    <div id="loading" class="skeleton-container">
+      <!-- Title skeleton -->
+      <div class="skeleton-title"></div>
+
+      <!-- Description skeleton -->
+      <div class="skeleton-description">
+        <div class="skeleton-line skeleton-line-long"></div>
+        <div class="skeleton-line skeleton-line-medium"></div>
+        <div class="skeleton-line skeleton-line-short"></div>
+      </div>
+
+      <!-- Cards skeleton -->
+      <ul class="skeleton-card-grid">
+        <li class="skeleton-card">
+          <div class="skeleton-card-header"></div>
+          <div class="skeleton-card-line"></div>
+          <div class="skeleton-card-line skeleton-card-line-short"></div>
+        </li>
+        <li class="skeleton-card">
+          <div class="skeleton-card-header"></div>
+          <div class="skeleton-card-line"></div>
+          <div class="skeleton-card-line skeleton-card-line-short"></div>
+        </li>
+        <li class="skeleton-card">
+          <div class="skeleton-card-header"></div>
+          <div class="skeleton-card-line"></div>
+          <div class="skeleton-card-line skeleton-card-line-short"></div>
+        </li>
+      </ul>
+    </div>
+    <div id="content" style="display: none;">
+      <h1>Interactive <span id="title"></span></h1>
+      <p class="instructions" id="description"></p>
+      <ul role="list" class="link-card-grid" id="cards-list"></ul>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  interface CardData {
+    href: string;
+    title: string;
+    body: string;
+  }
+
+  interface DescriptionData {
+    title: string;
+    titleHtml: string;
+    text: string;
+    code: string;
+  }
+
+  // Fetch data from API routes
+  async function loadData() {
+    const loadingElement = document.getElementById("loading");
+    const contentElement = document.getElementById("content");
+
+    try {
+      // Fetch cards data
+      const cardsResponse = await fetch("/api/cards");
+      if (!cardsResponse.ok) {
+        throw new Error(
+          `Failed to fetch cards: ${cardsResponse.status} ${cardsResponse.statusText}`
+        );
+      }
+      const cards: CardData[] = await cardsResponse.json();
+
+      // Fetch description data
+      const descriptionResponse = await fetch("/api/description");
+      if (!descriptionResponse.ok) {
+        throw new Error(
+          `Failed to fetch description: ${descriptionResponse.status} ${descriptionResponse.statusText}`
+        );
+      }
+      const description: DescriptionData = await descriptionResponse.json();
+
+      // Update title
+      const titleElement = document.getElementById("title");
+      if (titleElement) {
+        titleElement.innerHTML = description.titleHtml;
+      }
+
+      // Update description
+      const descriptionElement = document.getElementById("description");
+      if (descriptionElement) {
+        descriptionElement.innerHTML = `
+          ${description.text}<br />
+          <strong>API Routes:</strong>
+          <span>${description.code}</span>
+        `;
+      }
+
+      // Render cards
+      const cardsList = document.getElementById("cards-list");
+      if (cardsList) {
+        cardsList.innerHTML = cards
+          .map(
+            (card) => `
+            <li class="link-card">
+              <a href="${card.href}">
+                <h2>
+                  <span>${card.title}</span>
+                  <span>&rarr;</span>
+                </h2>
+                <p>${card.body}</p>
+              </a>
+            </li>
+          `
+          )
+          .join("");
+      }
+
+      // Hide loading and show content
+      if (loadingElement) {
+        loadingElement.style.display = "none";
+      }
+      if (contentElement) {
+        contentElement.style.display = "block";
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      // Hide loading on error
+      if (loadingElement) {
+        loadingElement.style.display = "none";
+      }
+      const main = document.querySelector("main");
+      if (main) {
+        main.innerHTML = `
+          <h1>Error</h1>
+          <p>Failed to load data. Please refresh the page.</p>
+        `;
+      }
+    }
+  }
+
+  // Load data when page is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadData);
+  } else {
+    loadData();
+  }
+</script>
+
+<style>
+  :root {
+    --astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
+  }
+
+  h1 {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  main {
+    margin: auto;
+    padding: 1em;
+    max-width: calc(60ch + 80px);
+  }
+
+  /* Skeleton Screen Styles */
+  .skeleton-container {
+    animation: skeleton-fade-in 0.3s ease-in;
+  }
+
+  @keyframes skeleton-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .skeleton-title {
+    height: 2.5rem;
+    width: 60%;
+    max-width: 300px;
+    margin: 2rem auto;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--accent-light), 0.1) 25%,
+      rgba(var(--accent-light), 0.2) 50%,
+      rgba(var(--accent-light), 0.1) 75%
+    );
+    background-size: 200% 100%;
+    border-radius: 0.5rem;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-description {
+    margin: 1rem 0;
+    padding: 1.5rem;
+    border: 1px solid rgba(var(--accent-light), 15%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 40%),
+      rgba(var(--accent-dark), 25%)
+    );
+    border-radius: 0.5rem;
+  }
+
+  .skeleton-line {
+    height: 1rem;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--accent-light), 0.08) 25%,
+      rgba(var(--accent-light), 0.15) 50%,
+      rgba(var(--accent-light), 0.08) 75%
+    );
+    background-size: 200% 100%;
+    border-radius: 0.25rem;
+    margin-bottom: 0.75rem;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-line-long {
+    width: 100%;
+  }
+
+  .skeleton-line-medium {
+    width: 75%;
+  }
+
+  .skeleton-line-short {
+    width: 50%;
+    margin-bottom: 0;
+  }
+
+  .skeleton-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skeleton-card {
+    padding: 0.08rem;
+    background: rgba(var(--accent-light), 0.1);
+    border-radius: 0.5rem;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-card > div {
+    margin: 0;
+    padding: 0;
+    border-radius: 0.35rem;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .skeleton-card-header {
+    height: 1.5rem;
+    width: 70%;
+    margin: 1em 1.3em 0.75rem 1.3em !important;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--accent-light), 0.1) 25%,
+      rgba(var(--accent-light), 0.2) 50%,
+      rgba(var(--accent-light), 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-card-line {
+    height: 0.875rem;
+    width: 90%;
+    margin: 0.5rem 1.3em !important;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--accent-light), 0.08) 25%,
+      rgba(var(--accent-light), 0.15) 50%,
+      rgba(var(--accent-light), 0.08) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-card-line-short {
+    width: 60%;
+    margin-bottom: 1em !important;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .text-gradient {
+    font-weight: 900;
+    background-image: var(--astro-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 100% 200%;
+    background-position-y: 100%;
+    border-radius: 0.4rem;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      background-position-y: 0%;
+    }
+    50% {
+      background-position-y: 80%;
+    }
+  }
+
+  .instructions {
+    line-height: 1.6;
+    margin: 1rem 0;
+    border: 1px solid rgba(var(--accent-light), 25%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 66%),
+      rgba(var(--accent-dark), 33%)
+    );
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    color: var(--color-text);
+  }
+
+  .instructions code {
+    font-size: 0.8em;
+    font-weight: 700;
+    background: rgba(var(--accent-light), 12%);
+    color: rgb(var(--accent-light));
+    border-radius: 4px;
+    padding: 0.3em 0.4em;
+  }
+
+  .instructions strong {
+    color: rgb(var(--accent-light));
+  }
+
+  .link-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 1rem;
+    padding: 0;
+  }
+
+  :global(.link-card) {
+    --link-gradient: linear-gradient(
+      45deg,
+      #4f39fa,
+      #da62c4 30%,
+      var(--color-border) 60%
+    );
+    list-style: none;
+    display: flex;
+    padding: 0.08rem;
+    background-color: rgba(255, 255, 255, 0.15);
+    background-image: var(--link-gradient);
+    background-size: 400%;
+    border-radius: 0.5rem;
+    background-position: 100%;
+    transition:
+      background-position 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :global(.link-card > a) {
+    width: 100%;
+    text-decoration: none;
+    line-height: 1.4;
+    padding: 1em 1.3em;
+    border-radius: 0.35rem;
+    color: var(--color-text);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  :global(.link-card h2) {
+    margin: 0;
+    transition: color 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :global(.link-card p) {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  :global(.link-card h2 span) {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :global(.link-card:is(:hover, :focus-within)) {
+    background-position: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  :global(.link-card:is(:hover, :focus-within) h2) {
+    color: #4f39fa;
+  }
+
+  :global(.link-card:is(:hover, :focus-within) h2 span) {
+    will-change: transform;
+    transform: translateX(2px);
+  }
+</style>

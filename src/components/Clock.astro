@@ -1,0 +1,26 @@
+---
+// Clock component using vanilla JavaScript
+---
+
+<span
+  id="clock-display"
+  style="font-size: 1rem; font-weight: 700; color: rgb(224, 204, 250); font-family: monospace;"
+>
+  Loading...
+</span>
+
+<script is:inline>
+  (function () {
+    const clockElement = document.getElementById('clock-display');
+    if (!clockElement) return;
+
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      clockElement.textContent = timeStr;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  })();
+</script>

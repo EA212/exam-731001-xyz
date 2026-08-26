@@ -1,0 +1,104 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+
+export const prerender = true;
+---
+
+<Layout title="Astro Configuration">
+  <main>
+    <h1>Astro <span class="text-gradient">Configuration</span></h1>
+    <p class="instructions">
+      This is a static page pre-rendered at build time.<br />
+      <strong>Static:</strong> Using <code>export const prerender = true</code>.
+    </p>
+    <ul role="list" class="link-card-grid">
+      <Card
+        href="https://docs.astro.build/en/guides/configuring-astro/"
+        title="Astro Config"
+        body="Configure your Astro project with astro.config.mjs. Set integrations, adapters, and build options."
+      />
+      <Card
+        href="https://docs.astro.build/en/reference/configuration-reference/"
+        title="Config Reference"
+        body="Complete reference for all available configuration options in Astro."
+      />
+      <Card
+        href="https://docs.astro.build/en/guides/environment-variables/"
+        title="Env Variables"
+        body="Use .env files to manage secrets and configuration across different environments."
+      />
+    </ul>
+  </main>
+</Layout>
+
+<style>
+  :root {
+    --astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
+  }
+
+  h1 {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  main {
+    margin: auto;
+    padding: 1em;
+    max-width: calc(60ch + 80px);
+  }
+
+  .text-gradient {
+    font-weight: 900;
+    background-image: var(--astro-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 100% 200%;
+    background-position-y: 100%;
+    border-radius: 0.4rem;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      background-position-y: 0%;
+    }
+    50% {
+      background-position-y: 80%;
+    }
+  }
+
+  .instructions {
+    line-height: 1.6;
+    margin: 1rem 0 2rem 0;
+    border: 1px solid rgba(var(--accent-light), 25%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 66%),
+      rgba(var(--accent-dark), 33%)
+    );
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    color: var(--color-text);
+  }
+
+  .instructions code {
+    font-size: 0.8em;
+    font-weight: 700;
+    background: rgba(var(--accent-light), 12%);
+    color: rgb(var(--accent-light));
+    border-radius: 4px;
+    padding: 0.3em 0.4em;
+  }
+
+  .instructions strong {
+    color: rgb(var(--accent-light));
+  }
+
+  .link-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 1rem;
+    padding: 0;
+  }
+</style>

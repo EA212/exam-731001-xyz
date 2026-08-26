@@ -1,0 +1,37 @@
+---
+title: MDX Demo
+---
+
+import Clock from '../../components/Clock.astro';
+
+# MDX  Example
+
+This is an **MDX** file that combines Markdown with JSX/React components!
+
+## Interactive Demo
+
+<p>
+Here's a live clock showing the current time: <Clock />
+</p>
+
+## Styled Components
+
+You can add inline styles and classes:
+
+<div style={{ 
+  padding: '1.5rem', 
+  margin: '1rem 0', 
+  background: 'linear-gradient(135deg, rgba(79, 57, 250, 0.2), rgba(218, 98, 196, 0.2))',
+  border: '1px solid rgba(var(--accent-light), 25%)',
+  borderRadius: '0.5rem',
+  borderLeft: '4px solid rgb(var(--accent))'
+}}>
+  <strong style={{ color: 'rgb(var(--accent-light))' }}>✨ This is a styled div with inline styles!</strong>
+  <p style={{ marginTop: '0.5rem', color: 'var(--color-text)' }}>
+    MDX gives you the power of React components in your content.
+  </p>
+</div>
+
+## Learn More
+
+Explore MDX capabilities:  [Astro MDX Documentation](https://docs.astro.build/en/guides/markdown-content/#mdx-in-astro)

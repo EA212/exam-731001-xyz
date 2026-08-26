@@ -1,0 +1,65 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getEntry, render } from 'astro:content';
+
+export const prerender = true;
+
+// Get MD content
+const mdEntry = await getEntry('examples', 'md');
+if (!mdEntry) throw new Error('md entry not found');
+const { Content } = await render(mdEntry);
+---
+
+<Layout title="Markdown Example">
+  <main class="markdown-container">
+    <Content />
+  </main>
+</Layout>
+
+<style>
+  :root {
+    --astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
+  }
+
+  main.markdown-container {
+    margin: auto;
+    padding: 1em;
+    max-width: calc(60ch + 80px);
+    line-height: 1.6;
+  }
+
+  main.markdown-container :global(h1) {
+    text-align: left;
+    margin: 2rem 0;
+  }
+
+  main.markdown-container :global(h2) {
+    margin: 1.5rem 0 0.75rem 0;
+  }
+
+  main.markdown-container :global(p) {
+    margin: 1rem 0;
+  }
+
+  main.markdown-container :global(ul) {
+    margin: 1rem 0;
+    padding-left: 0;
+    list-style-position: inside;
+  }
+
+  main.markdown-container :global(li) {
+    margin: 0.5rem 0;
+  }
+
+  main.markdown-container :global(a) {
+    color: rgb(var(--accent-light));
+    text-decoration: none;
+    font-weight: 700;
+    transition: opacity 0.3s;
+  }
+
+  main.markdown-container :global(a:hover) {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+</style>

@@ -1,0 +1,32 @@
+{
+  "name": "framework-static-astro",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.5",
+    "@astrojs/mdx": "^4.3.9",
+    "@astrojs/react": "^4.4.1",
+    "@astrojs/svelte": "^7.2.1",
+    "@astrojs/vercel": "^9.0.0",
+    "@astrojs/vue": "^5.1.2",
+    "@edgeone/astro": "^1.0.2",
+    "astro": "^5.15.3",
+    "marked": "^16.4.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "svelte": "^5.43.2",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "commander": "^14.0.2"
+  }
+}
+

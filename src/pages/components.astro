@@ -1,0 +1,129 @@
+---
+import Layout from "../layouts/Layout.astro";
+import ReactCard from "../components/ReactCard";
+import VueCard from "../components/VueCard.vue";
+import SvelteCard from "../components/SvelteCard.svelte";
+
+// Get server-side render time
+const renderTime = new Date();
+const formattedTime = renderTime.toLocaleString("en-US", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+---
+
+<Layout title="Astro Components">
+  <main>
+    <h1>Astro <span class="text-gradient">Components</span></h1>
+    <p class="instructions">
+      Astro supports multiple component frameworks.<br />
+      <strong>Framework Flexibility:</strong> Use React, Vue, Svelte, and more in
+      your Astro pages.<br />
+      <strong>Server Render Time:</strong>
+      <span class="render-time">{formattedTime}</span>
+    </p>
+    <ul role="list" class="link-card-grid">
+      <ReactCard
+        client:load
+        href="https://docs.astro.build/en/guides/integrations-guide/react/"
+        title="React"
+        body="Build interactive UI with React components. Perfect for complex state management."
+      />
+      <VueCard
+        client:load
+        href="https://docs.astro.build/en/guides/integrations-guide/vue/"
+        title="Vue"
+        body="Use Vue's reactive system and component composition in your Astro projects."
+      />
+      <SvelteCard
+        client:load
+        href="https://docs.astro.build/en/guides/integrations-guide/svelte/"
+        title="Svelte"
+        body="Compile away the framework with Svelte's zero-runtime approach."
+      />
+    </ul>
+  </main>
+</Layout>
+
+<style>
+  :root {
+    --astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
+  }
+
+  h1 {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  main {
+    margin: auto;
+    padding: 1em;
+    max-width: calc(60ch + 80px);
+  }
+
+  .text-gradient {
+    font-weight: 900;
+    background-image: var(--astro-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 100% 200%;
+    background-position-y: 100%;
+    border-radius: 0.4rem;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      background-position-y: 0%;
+    }
+    50% {
+      background-position-y: 80%;
+    }
+  }
+
+  .instructions {
+    line-height: 1.6;
+    margin: 1rem 0 2rem 0;
+    border: 1px solid rgba(var(--accent-light), 25%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 66%),
+      rgba(var(--accent-dark), 33%)
+    );
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    color: var(--color-text);
+  }
+
+  .instructions code {
+    font-size: 0.8em;
+    font-weight: 700;
+    background: rgba(var(--accent-light), 12%);
+    color: rgb(var(--accent-light));
+    border-radius: 4px;
+    padding: 0.3em 0.4em;
+  }
+
+  .instructions strong {
+    color: rgb(var(--accent-light));
+  }
+
+  .render-time {
+    color: rgb(var(--accent-light));
+    font-family: Menlo, Monaco, "Courier New", monospace;
+    font-size: 0.9em;
+    font-weight: 600;
+  }
+
+  .link-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 1rem;
+    padding: 0;
+  }
+</style>
