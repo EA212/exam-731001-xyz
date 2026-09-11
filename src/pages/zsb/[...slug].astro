@@ -1,0 +1,95 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+import { CATEGORIES, QUESTION_TYPES } from '../../content/config';
+import '../../styles/zsb.css';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await getCollection('zsb');
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry }
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+
+const toc = headings.filter((h) => h.depth === 2);
+const totalCount = d.sections.reduce((sum, s) => sum + (s.count ?? 0), 0);
+---
+
+<Layout title={d.title}>
+  <main class="zsb-doc" id="zsb-doc">
+    <div class="zsb-doc-toolbar">
+      <a class="zsb-btn" href="/zsb/">← 返回资料库</a>
+      {d.answerProvided && (
+        <button class="zsb-btn primary" id="toggle-answers" type="button">
+          显示答案
+        </button>
+      )}
+      <button class="zsb-btn" type="button" onclick="window.print()">打印</button>
+    </div>
+
+    <h1>{d.title}</h1>
+
+    <div class="zsb-doc-meta">
+      <span class="zsb-badge primary">{d.subject}</span>
+      <span class="zsb-badge">{CATEGORIES[d.category]}</span>
+      {d.year && <span class="zsb-badge">{d.year} 年</span>}
+      {d.score && <span class="zsb-badge">满分 {d.score} 分</span>}
+      {d.duration && <span class="zsb-badge">考试 {d.duration} 分钟</span>}
+      {totalCount > 0 && <span class="zsb-badge">共 {totalCount} 题</span>}
+      {d.answerProvided ? (
+        <span class="zsb-badge ok">含答案</span>
+      ) : (
+        <span class="zsb-badge warn">原卷无答案</span>
+      )}
+      {d.analysisProvided && <span class="zsb-badge ok">含解析</span>}
+    </div>
+
+    {d.sections.length > 0 && (
+      <div class="zsb-doc-meta">
+        {d.sections.map((s) => (
+          <span class="zsb-badge">
+            {s.name}
+            {s.count ? ` · ${s.count} 题` : ''}
+            {s.score ? ` · ${s.score} 分` : ''}
+            {s.type ? ` · ${QUESTION_TYPES[s.type] ?? ''}` : ''}
+          </span>
+        ))}
+      </div>
+    )}
+
+    {toc.length > 1 && (
+      <nav class="zsb-doc-meta">
+        {toc.map((h) => (
+          <a class="zsb-badge" href={`#${h.slug}`}>{h.text}</a>
+        ))}
+      </nav>
+    )}
+
+    <article>
+      <Content />
+    </article>
+
+    <hr />
+    <p class="zsb-card-summary">
+      原始文件：<code>{d.source ?? entry.id}</code>
+    </p>
+  </main>
+
+  <script is:inline>
+    var doc = document.getElementById('zsb-doc');
+    var btn = document.getElementById('toggle-answers');
+    if (doc && btn) {
+      btn.addEventListener('click', function () {
+        var on = doc.classList.toggle('show-answers');
+        btn.textContent = on ? '隐藏答案' : '显示答案';
+      });
+    }
+  </script>
+</Layout>

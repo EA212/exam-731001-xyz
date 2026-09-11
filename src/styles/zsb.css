@@ -1,0 +1,391 @@
+/* ------------------------------------------------------------------ *
+ *  专插本资料库（/zsb）共用样式
+ *  站点整体沿用 Layout.astro 的深色主题变量
+ * ------------------------------------------------------------------ */
+
+.zsb-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+}
+
+.zsb-page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ------------------------------ 页头 ------------------------------ */
+.zsb-hero {
+  padding: 2rem 0 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.zsb-hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  background: linear-gradient(90deg, #a78bfa, #f0abfc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
+}
+
+.zsb-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+/* ----------------------------- 筛选栏 ----------------------------- */
+.zsb-filters {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  background: linear-gradient(hsl(0, 0%, 15%) 80%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.zsb-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zsb-filter-group > span {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  margin-right: 0.15rem;
+}
+
+.zsb-chip {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.zsb-chip:hover {
+  border-color: rgba(167, 139, 250, 0.7);
+  color: #fff;
+}
+
+.zsb-chip.is-active {
+  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.zsb-empty {
+  padding: 3rem 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ------------------------------ 卡片 ------------------------------ */
+.zsb-group-title {
+  margin: 2rem 0 0.9rem;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.zsb-group-title::before {
+  content: '';
+  width: 4px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: linear-gradient(#a78bfa, #f0abfc);
+}
+
+.zsb-group-title small {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.zsb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.zsb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.zsb-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.55);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.zsb-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.zsb-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.zsb-badge {
+  font-size: 0.72rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.zsb-badge.primary {
+  background: rgba(124, 58, 237, 0.3);
+  color: #ddd6fe;
+}
+
+.zsb-badge.warn {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fde68a;
+}
+
+.zsb-badge.ok {
+  background: rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
+}
+
+.zsb-card-summary {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ---------------------------- 详情页 ---------------------------- */
+.zsb-doc {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 6rem;
+}
+
+.zsb-doc-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+  background: linear-gradient(hsl(0, 0%, 15%) 78%, transparent);
+}
+
+.zsb-btn {
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.9rem;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e9e9ef;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.zsb-btn:hover {
+  border-color: rgba(167, 139, 250, 0.7);
+}
+
+.zsb-btn.primary {
+  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.zsb-doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.zsb-doc h1 {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.45;
+  margin: 0.5rem 0 0.9rem;
+}
+
+.zsb-doc h2 {
+  font-size: 1.15rem;
+  margin: 2.4rem 0 1rem;
+  padding: 0.5rem 0.9rem;
+  border-left: 3px solid #a78bfa;
+  background: rgba(167, 139, 250, 0.08);
+  border-radius: 0 8px 8px 0;
+}
+
+.zsb-doc h3 {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 1.6rem 0 0.6rem;
+  font-weight: 600;
+}
+
+.zsb-doc p {
+  line-height: 1.85;
+  margin: 0.75rem 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.zsb-doc ul,
+.zsb-doc ol {
+  line-height: 1.85;
+  padding-left: 1.4rem;
+  margin: 0.6rem 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.zsb-doc li {
+  margin: 0.3rem 0;
+}
+
+.zsb-doc hr {
+  border: none;
+  border-top: 1px dashed rgba(255, 255, 255, 0.13);
+  margin: 1.6rem 0;
+}
+
+.zsb-doc blockquote {
+  margin: 1rem 0;
+  padding: 0.7rem 1rem;
+  border-left: 3px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0 8px 8px 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+/* --------- 题目 / 答案 / 解析 区块（由 remark-exam 插件打标） --------- */
+.zsb-doc .exam-q {
+  padding: 0.2rem 1rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.zsb-doc .exam-q:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.zsb-doc .exam-q > h3 {
+  margin-top: 0.9rem;
+}
+
+.zsb-doc .exam-answer,
+.zsb-doc .exam-analysis,
+.zsb-doc .exam-point,
+.zsb-doc .exam-ask {
+  display: none;
+  position: relative;
+  margin: 0.55rem 0;
+  padding: 0.6rem 0.9rem 0.6rem 2.4rem;
+  border-radius: 9px;
+  font-size: 0.94rem;
+}
+
+.zsb-doc .exam-ask {
+  display: block;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.zsb-doc .exam-answer {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.32);
+  color: #d1fae5;
+}
+
+.zsb-doc .exam-analysis {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: #fef3c7;
+}
+
+.zsb-doc .exam-point {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #e0e7ff;
+}
+
+.zsb-doc .exam-answer::before,
+.zsb-doc .exam-analysis::before,
+.zsb-doc .exam-point::before,
+.zsb-doc .exam-ask::before {
+  position: absolute;
+  left: 0.7rem;
+  top: 0.62rem;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.zsb-doc .exam-ask::before {
+  content: '❓';
+}
+.zsb-doc .exam-answer::before {
+  content: '✅';
+}
+.zsb-doc .exam-analysis::before {
+  content: '💡';
+}
+.zsb-doc .exam-point::before {
+  content: '📌';
+}
+
+/* 显示答案开关 */
+.zsb-doc.show-answers .exam-answer,
+.zsb-doc.show-answers .exam-analysis,
+.zsb-doc.show-answers .exam-point {
+  display: block;
+}
+
+/* 打印时一律显示 */
+@media print {
+  .zsb-doc .exam-answer,
+  .zsb-doc .exam-analysis,
+  .zsb-doc .exam-point {
+    display: block !important;
+  }
+  .zsb-doc-toolbar,
+  .zsb-filters {
+    display: none;
+  }
+}

@@ -1,0 +1,196 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORIES, SUBJECTS } from '../../content/config';
+import '../../styles/zsb.css';
+
+export const prerender = true;
+
+const all = (await getCollection('zsb')).filter((e) => !e.data.draft);
+
+// 排序：科目 → 年份倒序 → 标题
+const entries = [...all].sort((a, b) => {
+  if (a.data.subjectKey !== b.data.subjectKey)
+    return a.data.subjectKey === 'mingfa' ? -1 : 1;
+  return (b.data.year ?? b.data.order) - (a.data.year ?? a.data.order);
+});
+
+const subjectKeys = Object.keys(SUBJECTS) as (keyof typeof SUBJECTS)[];
+const usedCategories = [...new Set(entries.map((e) => e.data.category))];
+const years = [...new Set(entries.map((e) => e.data.year).filter(Boolean))].sort(
+  (a, b) => (b as number) - (a as number)
+);
+
+const grouped = subjectKeys
+  .map((key) => ({
+    key,
+    label: SUBJECTS[key],
+    items: entries.filter((e) => e.data.subjectKey === key)
+  }))
+  .filter((g) => g.items.length > 0);
+
+const typeLabels: Record<string, string> = {
+  danxuan: '单选',
+  duoxuan: '多选',
+  panduan: '判断',
+  tiankong: '填空',
+  mingci: '名词解释',
+  jianada: '简答',
+  bianxi: '辨析',
+  lunshu: '论述',
+  anli: '案例分析',
+  jisuan: '计算',
+  qita: '其他'
+};
+---
+
+<Layout title="专插本资料库">
+  <main class="zsb-page">
+    <header class="zsb-hero">
+      <h1>专插本资料库</h1>
+      <p>
+        共收录 <strong>{entries.length}</strong> 份资料 · 涵盖 {grouped.map((g) => g.label).join('、')}
+        · 支持按科目、类别、年份筛选
+      </p>
+    </header>
+
+    <div class="zsb-filters">
+      <div class="zsb-filter-group" data-filter="subject">
+        <span>科目</span>
+        <button class="zsb-chip is-active" data-value="all">全部</button>
+        {grouped.map((g) => (
+          <button class="zsb-chip" data-value={g.key}>{g.label}</button>
+        ))}
+      </div>
+
+      <div class="zsb-filter-group" data-filter="category">
+        <span>类别</span>
+        <button class="zsb-chip is-active" data-value="all">全部</button>
+        {usedCategories.map((c) => (
+          <button class="zsb-chip" data-value={c}>{CATEGORIES[c]}</button>
+        ))}
+      </div>
+
+      {years.length > 0 && (
+        <div class="zsb-filter-group" data-filter="year">
+          <span>年份</span>
+          <button class="zsb-chip is-active" data-value="all">全部</button>
+          {years.map((y) => (
+            <button class="zsb-chip" data-value={String(y)}>{y}</button>
+          ))}
+        </div>
+      )}
+
+      <div class="zsb-filter-group" data-filter="keyword">
+        <span>搜索</span>
+        <input
+          type="search"
+          id="zsb-search"
+          class="zsb-chip"
+          placeholder="输入关键词…"
+          style="cursor:text;min-width:11rem;"
+        />
+      </div>
+    </div>
+
+    {grouped.map((g) => (
+      <section data-subject-group={g.key}>
+        <h2 class="zsb-group-title">
+          {g.label} <small>{g.items.length} 份</small>
+        </h2>
+        <div class="zsb-grid">
+          {g.items.map((e) => (
+            <a
+              class="zsb-card"
+              href={`/zsb/${e.slug}/`}
+              data-subject={e.data.subjectKey}
+              data-category={e.data.category}
+              data-year={e.data.year ?? ''}
+              data-keyword={(e.data.title + ' ' + e.data.tags.join(' ')).toLowerCase()}
+            >
+              <h3>{e.data.title}</h3>
+              <div class="zsb-card-meta">
+                <span class="zsb-badge primary">{e.data.subject}</span>
+                <span class="zsb-badge">{CATEGORIES[e.data.category]}</span>
+                {e.data.year && <span class="zsb-badge">{e.data.year} 年</span>}
+                {e.data.answerProvided ? (
+                  <span class="zsb-badge ok">含答案</span>
+                ) : (
+                  <span class="zsb-badge warn">暂无答案</span>
+                )}
+              </div>
+              {e.data.sections.length > 0 && (
+                <p class="zsb-card-summary">
+                  {e.data.sections
+                    .map(
+                      (s) =>
+                        `${s.name}${s.count ? ` ${s.count} 题` : ''}${
+                          s.score ? ` / ${s.score} 分` : ''
+                        }`
+                    )
+                    .join(' · ')}
+                </p>
+              )}
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <p class="zsb-empty" id="zsb-empty" hidden>没有符合条件的资料</p>
+  </main>
+
+  <script>
+    const state: Record<string, string> = {
+      subject: 'all',
+      category: 'all',
+      year: 'all',
+      keyword: ''
+    };
+
+    function apply() {
+      let visible = 0;
+      document.querySelectorAll<HTMLElement>('[data-subject-group]').forEach((group) => {
+        let groupVisible = 0;
+        group.querySelectorAll<HTMLElement>('.zsb-card').forEach((card) => {
+          const ok =
+            (state.subject === 'all' || card.dataset.subject === state.subject) &&
+            (state.category === 'all' || card.dataset.category === state.category) &&
+            (state.year === 'all' || card.dataset.year === state.year) &&
+            (state.keyword === '' || (card.dataset.keyword || '').includes(state.keyword));
+          card.hidden = !ok;
+          if (ok) {
+            visible++;
+            groupVisible++;
+          }
+        });
+        group.hidden = groupVisible === 0;
+      });
+      const empty = document.getElementById('zsb-empty');
+      if (empty) empty.hidden = visible > 0;
+    }
+
+    document.querySelectorAll<HTMLElement>('.zsb-filter-group').forEach((group) => {
+      const key = group.dataset.filter;
+      if (!key || key === 'keyword') return;
+      group.addEventListener('click', (ev) => {
+        const btn = (ev.target as HTMLElement).closest<HTMLElement>('.zsb-chip');
+        if (!btn || btn.dataset.value === undefined) return;
+        group
+          .querySelectorAll('.zsb-chip')
+          .forEach((c) => c.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        state[key] = btn.dataset.value;
+        apply();
+      });
+    });
+
+    const search = document.getElementById('zsb-search') as HTMLInputElement | null;
+    if (search) {
+      search.addEventListener('input', () => {
+        state.keyword = search.value.trim().toLowerCase();
+        apply();
+      });
+    }
+  </script>
+</Layout>
