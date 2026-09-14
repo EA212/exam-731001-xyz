@@ -389,3 +389,211 @@
     display: none;
   }
 }
+
+/* ================================================================== *
+ *  移动端适配
+ * ================================================================== */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.zsb-page,
+.zsb-doc {
+  overflow-wrap: break-word;
+}
+
+/* 表格 / 代码块在窄屏不能把整页撑宽 */
+.zsb-doc article img,
+.zsb-doc article table,
+.zsb-doc article pre {
+  max-width: 100%;
+}
+
+.zsb-doc article table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  -webkit-overflow-scrolling: touch;
+}
+
+.zsb-doc article pre {
+  overflow-x: auto;
+}
+
+.zsb-doc article code {
+  overflow-wrap: anywhere;
+}
+
+.zsb-btn.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* 试卷页的「已刷 / 正确率」小条 */
+.zsb-doc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin: 0 0 1.2rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(124, 58, 237, 0.1);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.zsb-doc-stats b {
+  color: #ddd6fe;
+}
+
+@media (max-width: 720px) {
+  .zsb-page {
+    padding: 1.25rem 0.9rem 4.5rem;
+  }
+
+  .zsb-doc {
+    max-width: 100%;
+    padding: 0.6rem 0.9rem 5rem;
+  }
+
+  .zsb-doc h1 {
+    font-size: 1.22rem;
+    line-height: 1.5;
+  }
+
+  .zsb-doc h2 {
+    font-size: 1.02rem;
+    margin: 1.8rem 0 0.75rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .zsb-doc h3 {
+    font-size: 0.97rem;
+    line-height: 1.65;
+    margin: 1.2rem 0 0.5rem;
+  }
+
+  .zsb-doc p,
+  .zsb-doc li {
+    line-height: 1.8;
+  }
+
+  .zsb-doc ul,
+  .zsb-doc ol {
+    padding-left: 1.15rem;
+  }
+
+  /* 题目块：窄屏收紧内边距，别把内容挤窄 */
+  .zsb-doc .exam-q {
+    padding: 0.2rem 0.6rem 0.8rem;
+  }
+
+  .zsb-doc .exam-answer,
+  .zsb-doc .exam-analysis,
+  .zsb-doc .exam-point,
+  .zsb-doc .exam-ask {
+    padding: 0.55rem 0.75rem 0.55rem 2rem;
+    font-size: 0.9rem;
+  }
+
+  .zsb-doc .exam-answer::before,
+  .zsb-doc .exam-analysis::before,
+  .zsb-doc .exam-point::before,
+  .zsb-doc .exam-ask::before {
+    left: 0.55rem;
+  }
+
+  .zsb-doc-toolbar {
+    gap: 0.4rem;
+    padding: 0.5rem 0;
+  }
+
+  .zsb-btn {
+    font-size: 0.78rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  .zsb-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zsb-filters {
+    gap: 0.7rem;
+    padding: 0.7rem 0;
+  }
+
+  .zsb-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .zsb-doc-stats {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .zsb-doc-toolbar .zsb-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    min-width: 4.6rem;
+  }
+}
+
+/* ---------------------------- 刷题总览 ---------------------------- */
+.zsb-hero-actions {
+  margin: 0.9rem 0 0;
+}
+
+.zsb-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1.4rem 0 0.6rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(192, 38, 211, 0.07));
+}
+
+.zb-ov {
+  display: flex;
+  flex-direction: column;
+}
+
+.zb-ov b {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ddd6fe;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.zb-ov span {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.zsb-card-progress {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #a7f3d0;
+}
+
+@media (max-width: 720px) {
+  .zsb-overview {
+    gap: 1rem 1.4rem;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .zb-ov b {
+    font-size: 1.3rem;
+  }
+}
+
+

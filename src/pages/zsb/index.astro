@@ -1,12 +1,17 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { CATEGORIES, SUBJECTS } from '../../content/config';
+import { CATEGORIES, SUBJECTS, countObjectiveQuestions } from '../../lib/taxonomy';
 import '../../styles/zsb.css';
+import '../../styles/quiz.css';
 
 export const prerender = true;
 
 const all = (await getCollection('zsb')).filter((e) => !e.data.draft);
+
+// 每份资料可自动判分的客观题数量
+const gradableOf = (body: string | undefined) => countObjectiveQuestions(body ?? '');
+const questionTotal = all.reduce((s, e) => s + gradableOf(e.body), 0);
 
 // 排序：科目 → 年份倒序 → 标题
 const entries = [...all].sort((a, b) => {
@@ -28,20 +33,6 @@ const grouped = subjectKeys
     items: entries.filter((e) => e.data.subjectKey === key)
   }))
   .filter((g) => g.items.length > 0);
-
-const typeLabels: Record<string, string> = {
-  danxuan: '单选',
-  duoxuan: '多选',
-  panduan: '判断',
-  tiankong: '填空',
-  mingci: '名词解释',
-  jianada: '简答',
-  bianxi: '辨析',
-  lunshu: '论述',
-  anli: '案例分析',
-  jisuan: '计算',
-  qita: '其他'
-};
 ---
 
 <Layout title="专插本资料库">
@@ -49,10 +40,28 @@ const typeLabels: Record<string, string> = {
     <header class="zsb-hero">
       <h1>专插本资料库</h1>
       <p>
-        共收录 <strong>{entries.length}</strong> 份资料 · 涵盖 {grouped.map((g) => g.label).join('、')}
-        · 支持按科目、类别、年份筛选
+        共收录 <strong>{entries.length}</strong> 份资料 · 可答客观题 <strong>{questionTotal}</strong> 题
+        · 支持按科目、类别、年份筛选与在线答题
+      </p>
+      <p class="zsb-hero-actions">
+        <a class="zsb-btn primary" href="/zsb/wrong/">📕 我的错题本</a>
       </p>
     </header>
+
+    <div class="zsb-overview" id="zsb-overview">
+      <div class="zb-ov">
+        <b id="ov-total">{questionTotal}</b><span>题库总题数</span>
+      </div>
+      <div class="zb-ov">
+        <b id="ov-answered">0</b><span>已刷题数</span>
+      </div>
+      <div class="zb-ov">
+        <b id="ov-acc">0%</b><span>正确率</span>
+      </div>
+      <div class="zb-ov">
+        <b id="ov-wrong">0</b><span>待复习错题</span>
+      </div>
+    </div>
 
     <div class="zsb-filters">
       <div class="zsb-filter-group" data-filter="subject">
@@ -102,10 +111,11 @@ const typeLabels: Record<string, string> = {
           {g.items.map((e) => (
             <a
               class="zsb-card"
-              href={`/zsb/${e.slug}/`}
+              href={`/zsb/${e.id}/`}
               data-subject={e.data.subjectKey}
               data-category={e.data.category}
               data-year={e.data.year ?? ''}
+              data-doc-id={e.id}
               data-keyword={(e.data.title + ' ' + e.data.tags.join(' ')).toLowerCase()}
             >
               <h3>{e.data.title}</h3>
@@ -113,6 +123,9 @@ const typeLabels: Record<string, string> = {
                 <span class="zsb-badge primary">{e.data.subject}</span>
                 <span class="zsb-badge">{CATEGORIES[e.data.category]}</span>
                 {e.data.year && <span class="zsb-badge">{e.data.year} 年</span>}
+                {gradableOf(e.body) > 0 && (
+                  <span class="zsb-badge ok">可答 {gradableOf(e.body)} 题</span>
+                )}
                 {e.data.answerProvided ? (
                   <span class="zsb-badge ok">含答案</span>
                 ) : (
@@ -131,6 +144,7 @@ const typeLabels: Record<string, string> = {
                     .join(' · ')}
                 </p>
               )}
+              <p class="zsb-card-progress" data-progress-for={e.id} hidden></p>
             </a>
           ))}
         </div>
@@ -141,6 +155,36 @@ const typeLabels: Record<string, string> = {
   </main>
 
   <script>
+    import { getProgressMap, getSeenMap, getStats } from '../../lib/exam-store';
+
+    /* ------------------ 刷题总览 ------------------ */
+    const stats = getStats();
+    const acc = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0;
+    const set = (id: string, v: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+    set('ov-answered', String(stats.answered));
+    set('ov-acc', `${acc}%`);
+    set('ov-wrong', String(stats.pending));
+
+    /* ------------------ 卡片上的进度 ------------------ */
+    const prog = getProgressMap();
+    const seen = getSeenMap();
+    document.querySelectorAll<HTMLElement>('[data-progress-for]').forEach((el) => {
+      const id = el.dataset.progressFor || '';
+      const p = prog[id];
+      const seenHere = Object.values(seen).filter((s) => s.docId === id).length;
+      if (!p && !seenHere) return;
+      const done = p?.answered ?? seenHere;
+      const correct = p?.correct ?? Object.values(seen).filter((s) => s.docId === id && s.correct).length;
+      el.hidden = false;
+      el.textContent = p
+        ? `已答 ${p.answered}/${p.total} · 对 ${p.correct} · 错 ${p.wrong}${p.finished ? ' · 已完成' : ''}`
+        : `已刷 ${done} 题 · 对 ${correct}`;
+    });
+
+    /* ------------------ 筛选 ------------------ */
     const state: Record<string, string> = {
       subject: 'all',
       category: 'all',

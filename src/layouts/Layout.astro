@@ -12,7 +12,7 @@ const { title } = Astro.props as Props;
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/x-icon" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title} | EdgeOne Makers</title>
@@ -154,5 +154,12 @@ const { title } = Astro.props as Props;
   :global(.link-card:is(:hover, :focus-within) h2 span) {
     will-change: transform;
     transform: translateX(2px);
+  }
+
+  /* 窄屏时底部有一条固定的页面导航，正文留出空间 */
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: 3.4rem;
+    }
   }
 </style>

@@ -206,22 +206,26 @@ const currentPath = normalizePath(Astro.url.pathname);
     }
   }
 
-  /* Mobile responsive */
+  /* Mobile responsive —— 窄屏改为底部横向条，避免遮挡正文 */
   @media (max-width: 768px) {
     .page-navigator {
-      top: 50%;
-      right: 1rem;
-      bottom: auto;
-      transform: translateY(-50%);
+      top: auto;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      transform: none;
+      padding: 0.3rem 0.5rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+      background: rgba(10, 10, 10, 0.86);
+      backdrop-filter: blur(14px) saturate(160%);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      animation: none;
     }
 
     .nav-menu {
-      gap: 0.6rem;
-    }
-
-    .nav-menu a {
-      font-size: clamp(0.42rem, 1.4vw, 0.5rem);
-      padding: 0.16rem;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.45rem;
     }
 
     .nav-menu li:nth-child(1) a,
@@ -230,8 +234,18 @@ const currentPath = normalizePath(Astro.url.pathname);
     .nav-menu li:nth-child(4) a,
     .nav-menu li:nth-child(5) a,
     .nav-menu li:nth-child(6) a {
-      --ring-size: 48px;
-      --ring-font: clamp(0.42rem, 1.4vw, 0.5rem);
+      --ring-size: 38px;
+      --ring-font: 0.46rem;
+    }
+
+    .nav-menu a {
+      font-size: 0.46rem;
+      padding: 0.1rem;
+      box-shadow: none;
+    }
+
+    .active-indicator {
+      display: none;
     }
   }
 

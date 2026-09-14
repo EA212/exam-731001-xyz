@@ -1,0 +1,38 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import '../../styles/zsb.css';
+import '../../styles/quiz.css';
+
+export const prerender = true;
+
+const title = '错题本';
+---
+
+<Layout title={title}>
+  <main class="zsb-page zsb-wrong">
+    <header class="zsb-hero">
+      <h1>错题本</h1>
+      <p>
+        自动收录答题模式里答错的题目 · 数据只保存在 <strong id="wb-mode">本机浏览器存储</strong>
+        · 可随时「重做」直到掌握
+      </p>
+    </header>
+
+    <div class="wb-stats" id="wb-stats"></div>
+
+    <div id="wb-toolbar-host"></div>
+
+    <div id="wrongbook" class="wb-list"></div>
+
+    <div id="wb-redo-panel" class="quiz-root wb-redo" hidden></div>
+
+    <p class="zsb-empty" style="margin-top:2rem">
+      <a class="zsb-btn" href="/zsb/">← 返回资料库</a>
+    </p>
+  </main>
+</Layout>
+
+<script>
+  import { initWrongBook } from '../../lib/wrong-book';
+  initWrongBook();
+</script>

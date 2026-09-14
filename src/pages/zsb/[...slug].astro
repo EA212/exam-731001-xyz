@@ -1,15 +1,16 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, render } from 'astro:content';
-import { CATEGORIES, QUESTION_TYPES } from '../../content/config';
+import { CATEGORIES, QUESTION_TYPES, countObjectiveQuestions } from '../../lib/taxonomy';
 import '../../styles/zsb.css';
+import '../../styles/quiz.css';
 
 export const prerender = true;
 
 export async function getStaticPaths() {
   const entries = await getCollection('zsb');
   return entries.map((entry) => ({
-    params: { slug: entry.slug },
+    params: { slug: entry.id },
     props: { entry }
   }));
 }
@@ -20,17 +21,23 @@ const d = entry.data;
 
 const toc = headings.filter((h) => h.depth === 2);
 const totalCount = d.sections.reduce((sum, s) => sum + (s.count ?? 0), 0);
+// 可自动判分的客观题数量（单选 / 多选 / 判断）
+const gradable = countObjectiveQuestions(entry.body ?? '');
 ---
 
 <Layout title={d.title}>
-  <main class="zsb-doc" id="zsb-doc">
+  <main class="zsb-doc" id="zsb-doc" data-doc-id={entry.id} data-doc-title={d.title}>
     <div class="zsb-doc-toolbar">
       <a class="zsb-btn" href="/zsb/">← 返回资料库</a>
-      {d.answerProvided && (
-        <button class="zsb-btn primary" id="toggle-answers" type="button">
-          显示答案
-        </button>
+      {gradable > 0 ? (
+        <button class="zsb-btn primary" id="start-quiz" type="button">▶ 开始答题</button>
+      ) : (
+        <span class="zsb-btn is-disabled" title="本页为背诵/笔记类资料，无客观题">无可答题</span>
       )}
+      {d.answerProvided && (
+        <button class="zsb-btn" id="toggle-answers" type="button">显示答案</button>
+      )}
+      <a class="zsb-btn" href="/zsb/wrong/">错题本</a>
       <button class="zsb-btn" type="button" onclick="window.print()">打印</button>
     </div>
 
@@ -43,6 +50,7 @@ const totalCount = d.sections.reduce((sum, s) => sum + (s.count ?? 0), 0);
       {d.score && <span class="zsb-badge">满分 {d.score} 分</span>}
       {d.duration && <span class="zsb-badge">考试 {d.duration} 分钟</span>}
       {totalCount > 0 && <span class="zsb-badge">共 {totalCount} 题</span>}
+      {gradable > 0 && <span class="zsb-badge ok">可答 {gradable} 题</span>}
       {d.answerProvided ? (
         <span class="zsb-badge ok">含答案</span>
       ) : (
@@ -50,6 +58,8 @@ const totalCount = d.sections.reduce((sum, s) => sum + (s.count ?? 0), 0);
       )}
       {d.analysisProvided && <span class="zsb-badge ok">含解析</span>}
     </div>
+
+    <div class="zsb-doc-stats" id="doc-stats" hidden></div>
 
     {d.sections.length > 0 && (
       <div class="zsb-doc-meta">
@@ -81,15 +91,9 @@ const totalCount = d.sections.reduce((sum, s) => sum + (s.count ?? 0), 0);
       原始文件：<code>{d.source ?? entry.id}</code>
     </p>
   </main>
-
-  <script is:inline>
-    var doc = document.getElementById('zsb-doc');
-    var btn = document.getElementById('toggle-answers');
-    if (doc && btn) {
-      btn.addEventListener('click', function () {
-        var on = doc.classList.toggle('show-answers');
-        btn.textContent = on ? '隐藏答案' : '显示答案';
-      });
-    }
-  </script>
 </Layout>
+
+<script>
+  import { initQuiz } from '../../lib/exam-quiz';
+  initQuiz();
+</script>
