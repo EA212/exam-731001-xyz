@@ -14,17 +14,17 @@
  *   3. 单个标题块本身过大时，只在「非表格区的空行」处二次切。
  *   4. 强断言：所有片按顺序拼接 === 原始 md（逐字符），否则构建直接失败。
  *
- * 命名：第 1 片沿用 <slug>.html（旧链接 / 书签 / 索引页 / RSS 全部不失效），
- *       后续片 <slug>-2.html、-3.html …… 平铺同目录，file:// 离线可用。
+ * 命名对齐主站目录式 URL：/zz/zsb/<slug>/ 是第 1 片（index.html），
+ *       后续片为同目录下 2.html、3.html …… 链接与主站一一对应。
  */
 export const SPLIT_THRESHOLD = 24 * 1024;   // 源 md 超过 24 KB 才切
 export const PART_TARGET = 18 * 1024;       // 每片目标 18 KB 源文本
 export const PART_HARD_MAX = 48 * 1024;     // 单个标题块超过此值才允许二次切
 export const MAX_HTML_BYTES = 128 * 1024;   // 产物单页体积上限（门禁用）
 
-/** 分片文件名：index 从 1 开始 */
+/** 分片文件名：index 从 1 开始，第 1 片是目录首页 */
 export function partFilename(slug, index) {
-  return index === 1 ? slug + '.html' : slug + '-' + index + '.html';
+  return index === 1 ? slug + '/index.html' : slug + '/' + index + '.html';
 }
 
 /** 把文本按行切开且保留每行换行符，保证 join('') 逐字符还原 */

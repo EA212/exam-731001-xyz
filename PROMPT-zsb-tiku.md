@@ -158,7 +158,7 @@ order: 2019
 | 二级指标 | 原文要求 | 分值 | 本项目怎么落地 |
 | --- | --- | --- | --- |
 | **兼容性** | 使用主流浏览器访问网站，**不能正常显示页面内容的，每类扣 1 分** | 2 | 见 7.4。必须保证 IE9 / Win7 + 老安卓 WebView 下「页面内容正常显示」，这是本节最高优先级 |
-| 可用性 | 首页链接（含图片、附件、外链）打不开或错误，每处扣 0.2；其他页每处扣 0.1 | 1 | 构建后跑死链检查；`/l/` 降级页的所有链接必须指向真实存在的静态 HTML |
+| 可用性 | 首页链接（含图片、附件、外链）打不开或错误，每处扣 0.2；其他页每处扣 0.1 | 1 | 构建后跑死链检查；`/zz/zsb/` 降级页的所有链接必须指向真实存在的静态 HTML |
 | 站内搜索 | 未提供全站搜索或不可用扣 4；抽查 4 条标题，结果第一页找不到每条扣 1；未分类展现扣 1 | 4 | `/zsb/` 列表页筛选/搜索必须可用；降级版用 `<form method="get">` + 服务端/静态参数页兜底，不能只靠 JS |
 | 页面标签 | 抽查 5 个内容页、5 个栏目页，缺站点标签或内容标签，每个扣 0.1 | 1 | 每个页面输出 `<title>`、`<meta name="description">`、面包屑或科目/类别标签 |
 | IPv6 改造 | 未按要求完成 IPv6 改造扣 1 | 1 | 部署层事项，交付说明里写明，不要篡改代码假装完成 |
@@ -182,8 +182,8 @@ order: 2019
 
 | 要求 | 本项目怎么落地 |
 | --- | --- |
-| **独立的适老化网站中，页面内容应与原网站的主要内容保持一致** | `/l/` 降级版必须**共用同一份 `src/content/zsb/**` 内容**，禁止另抄一份题目；题目数量、答案、解析与主站逐条一致 |
-| **独立的适老化网站中，页面样式应实现扁平化** | `/l/legacy.css` 禁用阴影、透视、纹理、渐变文字、`backdrop-filter`；只用纯色块 + 边框 |
+| **独立的适老化网站中，页面内容应与原网站的主要内容保持一致** | `/zz/zsb/` 降级版必须**共用同一份 `src/content/zsb/**` 内容**，禁止另抄一份题目；题目数量、答案、解析与主站逐条一致 |
+| **独立的适老化网站中，页面样式应实现扁平化** | `/zz/zsb/legacy.css` 禁用阴影、透视、纹理、渐变文字、`backdrop-filter`；只用纯色块 + 边框 |
 | 禁止诱导下载 / 诱导付款按钮 | 降级版不放入口 |
 | 禁止第三方广告链接、弹窗、漂浮窗口 | 降级版不放任何外链广告、悬浮按钮 |
 | 各类终端及不同分辨率下均能正常显示 | 用百分比 / `max-width` 流式布局，不写死像素宽度 |
@@ -201,7 +201,7 @@ order: 2019
 - `【本项目无验证码】` 工信部 1.4.3 的验证码放大 ≥2 倍 + 语音替代条款不适用，不要为了凑条款硬加验证码
 - 语音朗读：政务评测要求正文页至少实现；本项目如不实现，需在交付说明中明确标注为**未实现项**，不要假装完成
 
-**纯文本 / 线性化模式**：依据[《政府网站集约化建设规范》](https://dbba.sacinfo.org.cn/portal/download/0d4a75384f738cea3b2529790e2a01a18ecde0ee59de22244f8f4821902ad546)「无障碍纯文本转换」及[吉州区政府「纯文本模式」说明](https://www.jzq.gov.cn/news-show-254.html)：把图像等非文本内容转成文本，**以线性化方式从上到下显示**，并提供「切换为可视化模式」返回入口。这正好对应老 WebView 的能力上限，是 `/l/` 降级版的官方范式。
+**纯文本 / 线性化模式**：依据[《政府网站集约化建设规范》](https://dbba.sacinfo.org.cn/portal/download/0d4a75384f738cea3b2529790e2a01a18ecde0ee59de22244f8f4821902ad546)「无障碍纯文本转换」及[吉州区政府「纯文本模式」说明](https://www.jzq.gov.cn/news-show-254.html)：把图像等非文本内容转成文本，**以线性化方式从上到下显示**，并提供「切换为可视化模式」返回入口。这正好对应老 WebView 的能力上限，是 `/zz/zsb/` 降级版的官方范式。
 
 ### 7.3 支持矩阵（先写清楚，再动手）
 
@@ -226,13 +226,14 @@ order: 2019
 
 ```
 现代站        /zsb/**            Astro 现有页面，不动
-基础页        /l/**              构建期另出的纯静态 HTML
-内容源        src/content/zsb/** 52 份 MD，两边共用，零重复
+镜像页        /zz/zsb/**         原站加一层 /zz 前缀，页面与链接一一对应；不设独立入口页
+内容源        src/content/专升本/** 同一份 MD，两边共用，零重复
 生成器        scripts/build-legacy.mjs
-              挂 package.json 的 postbuild，或 Astro 的 astro:build:done hook
-              读 MD → 用项目已装的 marked 渲染 → 最小模板 + 内联 legacy.css → dist/l/**/*.html
-校验门禁      scripts/verify-legacy.mjs  违规 exit 1，让构建失败
-入口          现代站固定位置放「极简版 / 长者版」链接；不做 UA 嗅探，用户可自测、可回退
+              由 npm run build 显式调用，早于 astro build，产物写入 public/zz/
+              → astro build 自己复制进 dist/client/zz/ → 适配器连同 dist/client 一起发布
+              （切勿挂 postbuild：EdgeOne 在 astro:build:done 就复制完了，postbuild 太晚会 404）
+校验门禁      scripts/verify-legacy.mjs  违规 exit 1，让构建失败；含发布目录含镜像页断言
+入口          现代站固定位置放「长者版」链接直达 /zz/zsb/；不做 UA 嗅探，可自测、可回退
 ```
 
 **分层做法与自动化边界**：
@@ -245,13 +246,13 @@ order: 2019
 | CSS 布局 | **不能靠 PostCSS 自动降级**：flex/grid 转不成 float，必须另写 `legacy.css`——`float` + `inline-block` + 百分比，颜色字号写死 px/em，去掉所有变量 / grid / sticky / `:is()` / 渐变文字 / `backdrop-filter`。IE9 原生支持圆角阴影，只有 IE8 才需 PIE.htc / respond.js | ❌ 必须重写 |
 | JS 语法 | `@babel/preset-env` + `targets: {ie: 9}` + `useBuiltIns: 'usage'` + `core-js@3`；产物必须是**普通 `<script defer>`** | ✅ 全自动 |
 | JS API | core-js 补 `Promise` / `Array.from` / `Object.values`；`classList` → `className`、`dataset` → `getAttribute`、`fetch` → `XMLHttpRequest` | 半自动 |
-| 校验门禁 | `es-check es5 dist/l/**/*.js`；断言产物中无 `type="module"`、无 `=>`、无 `var(--`、无 `display:grid`、无 `gap:`、无 `clamp(` | ✅ 全自动 |
+| 校验门禁 | `es-check es5 dist/client/zz/zsb/**/*.js`；断言产物中无 `type="module"`、无 `=>`、无 `var(--`、无 `display:grid`、无 `gap:`、无 `clamp(` | ✅ 全自动 |
 
 **三个自动不了、也别硬扛的点**（写进注释，避免后来者重新踩）：
 
 1. Babel 改不了 HTML 里 script 的类型，`type="module"` 必须在**模板层**换掉；
 2. 布局必须另写一份 CSS，PostCSS 不会把 flex 变成 float；
-3. Vue 3 需要 `Proxy`、React 19 需要 `Symbol`，**无法 polyfill**。所以**不要试图在现有框架链上做兼容**，只能另出 `/l/` 产物；现有 `initQuiz()` 那套 TS 不要转译，重写一份 10–15KB 的 ES5 IIFE（`var` / `function` / `getElementById` / `for` 循环）即可，或直接走 C 档纯只读。
+3. Vue 3 需要 `Proxy`、React 19 需要 `Symbol`，**无法 polyfill**。所以**不要试图在现有框架链上做兼容**，只能另出 `/zz/zsb/` 产物；现有 `initQuiz()` 那套 TS 不要转译，重写一份 10–15KB 的 ES5 IIFE（`var` / `function` / `getElementById` / `for` 循环）即可，或直接走 C 档纯只读。
 
 **入口不要用 UA 嗅探**：按 BBC「Cutting the Mustard」的二值分流思路做特性检测，过不了线就只给基线、**根本不下载增强脚本**；或用显眼的手工入口（政务「长者版」的做法）。表单必须有真实 `action` / `method`，服务端/静态页是兜底地板。
 
@@ -269,13 +270,13 @@ order: 2019
 
 **本项目怎么落地**：
 
-- **构建期生成静态 `dist/rss.xml`（RSS 2.0）**，不要依赖运行时接口；Astro 项目可用 `@astrojs/rss` 或 `scripts/build-legacy.mjs` 一并输出。内容源同样是 `src/content/zsb/**`，与 `/zsb/`、`/l/` **三份产物共用一个内容源**。
+- **构建期生成静态 `dist/rss.xml`（RSS 2.0）**，不要依赖运行时接口；Astro 项目可用 `@astrojs/rss` 或 `scripts/build-legacy.mjs` 一并输出。内容源同样是 `src/content/zsb/**`，与 `/zsb/`、`/zz/zsb/` **三份产物共用一个内容源**。
 - **按栏目分频道**：全站 feed + 按 `subjectKey`（科目）、按 `category`（真题 / 笔记 / 考点…）的分频道 feed，对应浙江办法「栏目信息订阅」的粒度要求。
 - **自动发现**：每个页面 `<head>` 输出 `<link rel="alternate" type="application/rss+xml" title="..." href="/rss.xml">`，老浏览器与阅读器都能识别。
 - **每个 `<item>` 必填**：`title`、`link`（绝对地址）、`guid`（永久唯一，用文件路径或稳定 ID）、`pubDate`（RFC 822 格式）、`description`（**纯文本摘要，不带 HTML/JS**）、`category`（科目 / 类别）。`<channel>` 必填 `title` / `link` / `description` / `language` / `lastBuildDate`。
 - **纯 XML、零 JS、零 CSS**，UTF-8，`Content-Type: application/rss+xml; charset=utf-8`；不要塞追踪像素、广告、诱导下载。
 - **订阅 / 退订**：无需登录即可订阅；若提供邮件订阅，必须提供**无条件退订且立即停止发送**（江西规范硬条款）。订阅步骤要少、渠道要全（对应北京解读点名的三个不足）。
-- **与降级版的关系**：RSS 本身就是**零 JS 的内容分发通道**，老 WebView / 阅读器 / 离线工具可直接消费，和 `/l/` 一样属于「基线层」。它同时是 7.1「首页不更新 / 栏目不更新」单项否决的**可核验更新信号**。
+- **与降级版的关系**：RSS 本身就是**零 JS 的内容分发通道**，老 WebView / 阅读器 / 离线工具可直接消费，和 `/zz/zsb/` 一样属于「基线层」。它同时是 7.1「首页不更新 / 栏目不更新」单项否决的**可核验更新信号**。
 - **校验**：`xmllint --noout dist/rss.xml` 或 W3C Feed Validation Service 通过；断言 `pubDate` 格式、所有 `link` 指向真实存在的页面、`item` 数量与内容集合条目数一致；纳入 `verify-legacy.mjs` 门禁。
 
 ### 7.6 出处清单
@@ -295,23 +296,23 @@ order: 2019
 
 **硬性考核**
 - [ ] 兼容性：IE9 与 Android 4.0 WebView 下页面内容均能正常显示，无整段脚本静默失效
-- [ ] 可用性：全站及 `/l/` 所有链接可达，无死链（首页每处扣 0.2 分）
-- [ ] 站内搜索：主站与降级版都有可用的检索/筛选，降级版不依赖 JS
+- [ ] 可用性：全站及 `/zz/zsb/` 所有链接可达，无死链（首页每处扣 0.2 分）
+- [ ] 站内浏览：主站有筛选；降级版用「按科目分组的静态列表」直达全部资料，不依赖 JS
 - [ ] 页面标签：每页有 `<title>`、description、科目/类别标签
 - [ ] 有可核验的更新时间与更新信号（RSS `lastBuildDate` / `pubDate`），无伪造日期
 - [ ] `【政务专属】` 项按实际部署形态决定，未部署为政务站时不硬塞
 
 **适老化 / 无障碍**
-- [ ] `/l/` 与主站内容逐条一致（共用同一内容源，不是另抄一份）
+- [ ] `/zz/zsb/` 与主站内容逐条一致（共用同一内容源，不是另抄一份）
 - [ ] 扁平化：无阴影/透视/纹理/渐变文字/漂浮窗口/广告/诱导按钮
 - [ ] 无 tab 页、无隐藏内容，答案默认展开
 - [ ] 正文 ≥18px、行距 200%、字距 ≥1px、对比度 ≥4.5:1
 - [ ] 焦点可见、可纯键盘操作、点击区域 ≥44×44px、图片有 `alt`
-- [ ] 有固定「极简版 / 长者版」入口 + 显眼「返回正常版」，选择可继承
+- [ ] 主站固定位置一个「长者版」链接直达 /zz/zsb/（不是独立入口页）+ 显眼「返回正常版」
 - [ ] 未实现项（如语音朗读）在交付说明中明确列出，不假装完成
 
 **向下兼容 / 构建**
-- [ ] `npm run build` 自动产出 `dist/l/**/*.html`，无需人工操作
+- [ ] `npm run build` 自动产出 `dist/client/zz/zsb/**/*.html`，无需人工操作
 - [ ] 产物中无 `type="module"`、无 `=>`、无 `var(--`、无 `display:grid`、无 `gap:`、无 `clamp(`
 - [ ] `es-check es5` 通过；`xmllint --noout` 通过；校验失败会让构建失败
 - [ ] `browserslist` 声明 `ie >= 9`；`postcss-custom-properties` 设 `preserve: false`
@@ -328,7 +329,7 @@ order: 2019
 - [ ] feed 内无追踪、广告、诱导下载
 
 **大文档分片（规范详见 7.8）**
-- [ ] 源 MD 保持完整未拆；分片拼接逐字符无损；首片 URL 不变
+- [ ] 源 MD 保持完整未拆；分片拼接逐字符无损；首片 URL 与主站一一对应（仅多 /zz）
 - [ ] 零 JS 可翻页；未读的片不被预取；CSS 外链可缓存
 - [ ] 单页体积有上限且纳入门禁；表格 / 列表 / 题目块未被切断
 
@@ -352,9 +353,9 @@ IE9 / Android 4.0 WebView 内存小、网络慢，一次性下载整篇既卡又
    `#` 行不算标题。单个标题块过大时，只在**非表格区的空行**二次切。
 3. **无损强断言**：所有片按顺序拼接必须逐字符 `===` 原 MD，
    不一致就抛错让构建失败。这是分片唯一的正确性标准。
-4. 命名：第 1 片沿用 `<slug>.html`——索引页 / RSS / 书签 / 旧链接全部不失效；
-   后续 `<slug>-2.html`、`-3.html`……平铺同目录（`file://` 相对路径可用）。
-   生成器每次先清理上一次构建的分片残留，避免残留死页。
+4. 命名对齐主站目录式 URL：第 1 片是 `/zz/zsb/<slug>/`（`index.html`），
+   后续片同目录 `2.html`、`3.html`……；链接与主站一一对应，仅多一层 `/zz` 前缀。
+   生成器每次全量重建 `public/zz/`，避免旧分片 / 旧结构残留死页。
 5. 每片带：页码 `第 i / N 页`、上一页 / 下一页 / 资料库目录 / 跳页目录，
    点击区 ≥44px。**零 JavaScript 也能完整翻页**：普通 `<a href>` 就是基线，
    分片导航不是 JS 组件。
@@ -366,15 +367,17 @@ IE9 / Android 4.0 WebView 内存小、网络慢，一次性下载整篇既卡又
      `addEventListener` / `textContent`）；禁用 `fetch`、ESM、`dataset`、
      `classList`、`Promise`
    - `file://` 协议下自动禁用（XHR 读本地文件受同源策略限制），
-     基线「下一页」链接照常可用；离线包按整个 `/l/` 目录分发
+     基线「下一页」链接照常可用；离线包按整个 `/zz/zsb/` 目录分发
    - 抽取边界用显式标记（如 `<!--L_BODY_END-->` / `<!--L_NEXT:...-->`），
      不要靠猜 HTML 结构；追加内容前剥掉 `<script>`
    - 任何异常都静默回退到普通链接，绝不影响阅读
 8. **样式外链可缓存**：分片会让页面数翻倍，CSS 若内联会重复下载 N 次。
-   默认 `<link rel="stylesheet" href="../legacy.css">`（可缓存、跨片只下一次）；
-   保留 `LEGACY_INLINE_CSS=1` 开关供「单个 HTML 文件拷走」的场景。
-9. 校验门禁必须覆盖：分片无损、首片 URL 不变、片链连续且无多余残留、
-   末片无下一页标记、单页体积上限（如 128 KB）、表格标签闭合、ES5 语法。
+   默认 `<link rel="stylesheet" href="../../legacy.css">`（可缓存、跨片只下一次，
+   相对前缀按每页所在目录深度计算）；保留 `LEGACY_INLINE_CSS=1` 开关供
+   「单个 HTML 文件拷走」的场景。
+9. 校验门禁必须覆盖：分片无损、首片 URL 与主站一一对应、片链连续且无多余残留、
+   末片无下一页标记、单页体积上限（如 128 KB）、表格标签闭合、ES5 语法，
+   以及**发布目录 `.edgeone/assets/zz/zsb/` 确实含镜像页**（防止产物没被复制导致 404）。
 10. 交付说明写出实测带宽收益：最大页体积、首屏下载量、省下的重复 CSS 字节数。
 
 **不要这样做**

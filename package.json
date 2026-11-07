@@ -5,11 +5,10 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
-    "postbuild": "node scripts/build-legacy.mjs && node scripts/verify-legacy.mjs",
+    "build": "node scripts/build-legacy.mjs && astro check && astro build && node scripts/verify-legacy.mjs",
     "build:legacy": "node scripts/build-legacy.mjs",
     "verify:legacy": "node scripts/verify-legacy.mjs",
-    "check:es5": "es-check es5 dist/client/l/enhance.js",
+    "check:es5": "es-check es5 dist/client/zz/zsb/enhance.js",
     "preview": "astro preview",
     "astro": "astro"
   },

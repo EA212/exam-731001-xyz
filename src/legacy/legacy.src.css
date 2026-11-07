@@ -4,7 +4,7 @@
  * 构建期由 scripts/build-legacy.mjs 用 PostCSS 编译：
  *   postcss-custom-properties { preserve: false }  → 把 var() 全部展开为静态值
  *   autoprefixer (ie >= 9, Android >= 4)          → 补 -webkit- 等前缀
- * 产物内联进 /l/ 的每一个 HTML，保证 file:// 离线打开也完整可用。
+ * 产物内联进 /zz/zsb/ 的每一个 HTML，保证 file:// 离线打开也完整可用。
  *
  * 硬约束（见 PROMPT-zsb-tiku.md 7.2 / 7.4）：
  *   - 不使用弹性盒、网格布局、间隙属性、现代关系选择器与特性查询

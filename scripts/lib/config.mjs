@@ -16,6 +16,13 @@ export const LEGACY_CSS_SRC = path.join(ROOT, 'src/legacy/legacy.src.css');
 export const ENHANCE_JS_SRC = path.join(ROOT, 'src/legacy/enhance.js');
 export const TAXONOMY_TS = path.join(ROOT, 'src/lib/taxonomy.ts');
 
+/**
+ * 长者版是主站的镜像：主站 /zsb/** → 长者版 /zz/zsb/**。
+ * 只加一层 /zz 前缀，页面与链接一一对应，不另立一套路径体系。
+ */
+export const LEGACY_PREFIX = '/zz/zsb/';
+export const LEGACY_SUBDIR = 'zz/zsb';
+
 /** 与 src/lib/taxonomy.ts 的 SUBJECTS 一致 */
 export const SUBJECTS = {
   mingfa: '民法',
@@ -50,16 +57,28 @@ export const SITE_TITLE = '专插本资料库';
 export const SITE_DESC = '专插本历年真题、背诵笔记与考点资料的结构化题库';
 
 /**
- * /l/ 页面默认外链 legacy.css（可缓存、跨分片只下载一次，省带宽）。
+ * 长者版页面默认外链 legacy.css（可缓存、跨分片只下载一次，省带宽）。
  * 需要「单个 HTML 拷走也能看」时：LEGACY_INLINE_CSS=1 npm run build 会把样式内联回去。
- * 分片页按整个 /l/ 目录分发，外链相对路径在 file:// 下同样可用。
  */
 export const INLINE_CSS = process.env.LEGACY_INLINE_CSS === '1';
+
+/**
+ * 产物先写进 public/，由 astro build 自己复制到 dist/client。
+ * 这样 EdgeOne 适配器在 astro:build:done 复制 dist/client 时必然带上，
+ * 不需要 postbuild、不需要 CI、不需要额外钩子。
+ */
+export const PUBLIC_DIR = path.join(ROOT, 'public');
+export const LEGACY_PUBLIC_DIR = path.join(PUBLIC_DIR, LEGACY_SUBDIR);
 
 /** EdgeOne 适配器把静态资源放在 dist/client；兼容其他适配器直接放 dist */
 export function outDir() {
   const client = path.join(ROOT, 'dist/client');
   return fs.existsSync(client) ? client : path.join(ROOT, 'dist');
+}
+
+/** 最终发布产物里的长者版目录（verify 检查用） */
+export function legacyOutDir() {
+  return path.join(outDir(), LEGACY_SUBDIR);
 }
 
 /** 复刻 src/lib/taxonomy.ts 的 pathToSlug()，保证降级页与主站 URL 一一对应 */
@@ -108,7 +127,7 @@ export function stripMd(md) {
     .trim();
 }
 
-/** 从目标 HTML 所在目录回到 out/l/ 的相对前缀（离线 file:// 也可用） */
+/** 从目标 HTML 所在目录回到长者版根目录的相对前缀（离线 file:// 也可用） */
 export function lPrefix(htmlFile, lDir) {
   const rel = path.relative(path.dirname(htmlFile), lDir);
   return rel === '' ? '' : rel.split(path.sep).join('/') + '/';

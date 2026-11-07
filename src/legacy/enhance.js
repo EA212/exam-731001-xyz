@@ -1,5 +1,5 @@
 /*
- * /l/ 降级页的渐进增强脚本（ES5，普通 <script defer>，非 module）
+ * /zz/zsb/ 降级页的渐进增强脚本（ES5，普通 <script defer>，非 module）
  *
  * 基线页面零 JS 即可完整阅读；本脚本只做增强：
  *   1. 字号切换（标准 / 大 / 超大），用 cookie 记住选择
@@ -186,7 +186,7 @@
 
   function initStream() {
     // file:// 下 XHR 读本地文件会被浏览器拒绝，直接禁用增强；
-    // 基线「下一页 →」链接照常可用，离线包按整个 /l/ 目录分发。
+    // 基线「下一页 →」链接照常可用，离线包按整个 /zz/zsb/ 目录分发。
     if (window.location && window.location.protocol === 'file:') return;
     if (!byId('l-body') || !byId('l-next')) return;
     if (!window.addEventListener || !window.XMLHttpRequest) return;
