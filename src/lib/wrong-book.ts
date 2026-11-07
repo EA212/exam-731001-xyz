@@ -16,6 +16,7 @@ import {
   writeStore,
   KEY_WRONG,
 } from './exam-store';
+import { createQuizPlayer, type QuizQuestion, type QuizPlayer } from './quiz-player';
 
 type Filter = 'pending' | 'mastered' | 'all';
 
@@ -153,95 +154,35 @@ export function initWrongBook(): void {
     `<button class="quiz-chip ${cur === v ? 'on' : ''}" data-v="${v}" type="button">${label}</button>`;
 
   /* ------------------------------ 重做 ------------------------------ */
+  let redoPlayer: QuizPlayer | null = null;
+
   function startRedo(list: WrongRecord[]): void {
-    const panel = document.getElementById('wb-redo-panel');
+    const panel = document.getElementById('wb-redo-panel') as HTMLElement | null;
     if (!panel || !list.length) return;
-    let i = 0;
-    let chosen = '';
-    let graded = false;
-
-    const render = (): void => {
-      const w = list[i];
-      const isRight = (pick: string) => (w.answer === pick);
-      panel.hidden = false;
-      panel.innerHTML = `
-        <div class="quiz-top">
-          <button class="quiz-icon-btn" id="redo-close" type="button">×</button>
-          <div class="quiz-top-info"><span>错题重做</span><span class="quiz-dot">·</span><span>${i + 1} / ${list.length}</span></div>
-          <span class="quiz-icon-btn" style="visibility:hidden">·</span>
-        </div>
-        <div class="quiz-card">
-          <div class="quiz-qhead">
-            <span class="quiz-qtype">${esc(w.typeName)}</span>
-            <span class="quiz-qpoint">${w.point} 分</span>
-            <span class="quiz-qnum">${esc(w.docTitle)} · 第 ${esc(w.num)} 题</span>
-          </div>
-          <div class="quiz-stem"><p>${esc(w.stem.split('\n').filter(Boolean).join(' '))}</p></div>
-          <div class="quiz-options">
-            ${w.options
-              .map((o) => {
-                const on = chosen === o.label;
-                const ok = w.answer.includes(o.label);
-                const cls = ['quiz-opt', on ? 'on' : '', graded && ok ? 'correct' : '', graded && on && !ok ? 'wrong' : '']
-                  .filter(Boolean)
-                  .join(' ');
-                return `<button class="${cls}" data-label="${esc(o.label)}" type="button"><span class="k">${esc(o.label)}</span><span class="v">${esc(o.text)}</span></button>`;
-              })
-              .join('')}
-          </div>
-          ${
-            graded
-              ? `<div class="quiz-feedback ${isRight(chosen) ? 'ok' : 'bad'}">
-                   <div class="qf-title">${isRight(chosen) ? '答对了' : '又错了'}</div>
-                   <div class="qf-answer">正确答案：<b>${esc(w.answer)}</b> · 你选了 <b>${esc(chosen)}</b> · 这是第 ${w.wrongCount + (isRight(chosen) ? 0 : 1)} 次错</div>
-                   ${w.analysis ? `<div class="qf-analysis">${esc(w.analysis)}</div>` : ''}
-                 </div>`
-              : ''
-          }
-          <div class="quiz-actions">
-            ${
-              graded && isRight(chosen)
-                ? `<button class="quiz-btn primary" id="redo-master" type="button">答对了，移出错题本</button>`
-                : ''
-            }
-            <button class="quiz-btn" id="redo-next" type="button">${i === list.length - 1 ? '结束' : '下一题'}</button>
-          </div>
-        </div>`;
-
-      panel.querySelectorAll<HTMLElement>('.quiz-opt').forEach((b) =>
-        b.addEventListener('click', () => {
-          if (graded) return;
-          chosen = b.dataset.label || '';
-          graded = true;
-          render();
-        })
-      );
-      panel.querySelector('#redo-close')?.addEventListener('click', () => {
-        panel.hidden = true;
-        renderList();
-        renderStats();
+    const questions: QuizQuestion[] = list.map((w) => ({
+      id: w.id,
+      num: w.num,
+      stem: w.stem,
+      options: w.options,
+      answer: w.answer,
+      analysis: w.analysis,
+      type: w.type,
+      typeName: w.typeName,
+      point: w.point,
+      source: w.docTitle,
+    }));
+    if (!redoPlayer) {
+      redoPlayer = createQuizPlayer({
+        mount: panel,
+        questions,
+        title: '错题重做',
+        settings: false,
+        wrongBookUrl: '/zsb/wrong/',
+        onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
+        onClose: (): void => { renderList(); renderStats(); },
       });
-      panel.querySelector('#redo-master')?.addEventListener('click', () => {
-        markWrongMastered(w.id, true);
-        next();
-      });
-      panel.querySelector('#redo-next')?.addEventListener('click', next);
-    };
-
-    const next = (): void => {
-      chosen = '';
-      graded = false;
-      if (i < list.length - 1) {
-        i += 1;
-        render();
-      } else {
-        panel.hidden = true;
-        renderList();
-        renderStats();
-      }
-    };
-
-    render();
+    }
+    redoPlayer.start(questions, true);
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
