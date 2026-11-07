@@ -1,20 +1,28 @@
 /**
  * 构建期校验门禁（挂 postbuild，在 build-legacy.mjs 之后执行）
  *
- * 把 PROMPT-zsb-tiku.md 7.7 的验收清单代码化：任何一项不通过就让构建失败。
- * 覆盖：禁用语法串、必需文档标记、条目数一致、ES5、RSS 合法性、
- *       RSS link 可达、分类字典与 src/lib/taxonomy.ts 一致。
+ * 把 PROMPT-zsb-tiku.md 7.7 / 7.8 的验收清单代码化：任何一项不通过就让构建失败。
+ * 覆盖：禁用语法串、必需文档标记、条目数一致、大文档分片无损与链完整、
+ *       单页体积上限、样式加载方式、ES5、RSS 合法性、RSS link 可达、
+ *       分类字典与 src/lib/taxonomy.ts 一致。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { loadEntries } from './lib/content.mjs';
 import {
+  splitMarkdown,
+  partFilename,
+  SPLIT_THRESHOLD,
+  MAX_HTML_BYTES
+} from './lib/split.mjs';
+import {
   ROOT,
   TAXONOMY_TS,
   SUBJECTS,
   CATEGORIES,
   SITE_URL,
+  INLINE_CSS,
   outDir
 } from './lib/config.mjs';
 
@@ -85,6 +93,15 @@ for (const file of htmlFiles) {
   }
   check(!/<[^>]*\shidden[\s>]/i.test(scan), rel + ' 含 hidden 属性（老浏览器不认识）');
 
+  // 样式加载方式：外链可缓存（默认）或显式指定的全内联，二者必须一致
+  if (INLINE_CSS) {
+    check(html.includes('<style>'), rel + ' 内联模式下缺少 <style>');
+  } else {
+    check(/<link[^>]*rel="stylesheet"[^>]*legacy\.css/i.test(html),
+      rel + ' 外链模式下缺少 legacy.css 样式表');
+    check(!html.includes('<style>'), rel + ' 外链模式仍内联 CSS（分片后会造成重复下载）');
+  }
+
   // 只允许一个普通 defer script（enhance.js），不允许 module / 内联脚本
   const scripts = scan.match(/<script[^>]*>/gi) || [];
   check(scripts.length <= 1, rel + ' 出现多个 <script> 标签');
@@ -106,15 +123,92 @@ check(entries.length > 0, '未读取到任何内容条目');
 notes.push('内容条目 ' + entries.length + ' 份，降级页一一对应');
 
 /* ------------------------------------------------------------------ *
+ * 2.1 大文档分片（PROMPT-zsb-tiku.md 7.8）
+ *      源文件完整性、逐字符无损、分片链完整、单页体积上限
+ * ------------------------------------------------------------------ */
+let splitDocs = 0;
+let totalParts = 0;
+let maxHtml = 0;
+let biggestHtml = '';
+let maxSource = 0;
+
+for (const e of entries) {
+  const r = splitMarkdown(e.body);
+  maxSource = Math.max(maxSource, r.sourceBytes);
+
+  // 无损：所有片按顺序拼接必须逐字符等于原 md
+  check(r.parts.map((p) => p.md).join('') === e.body,
+    e.slug + ' 分片拼接与原 md 不一致（切分丢了字）');
+
+  if (r.split) splitDocs++;
+  totalParts += r.parts.length;
+
+  for (const p of r.parts) {
+    const name = partFilename(e.slug, p.index);
+    const file = path.join(L_DIR, name);
+    check(fs.existsSync(file), '缺少分片页：' + name);
+    if (!fs.existsSync(file)) continue;
+
+    const bytes = fs.statSync(file).size;
+    if (bytes > maxHtml) {
+      maxHtml = bytes;
+      biggestHtml = name;
+    }
+    check(bytes <= MAX_HTML_BYTES,
+      name + ' 单页 ' + bytes + ' 字节，超过上限 ' + MAX_HTML_BYTES + '（分片未生效？）');
+
+    const html = fs.readFileSync(file, 'utf8');
+    // 每片都有内容区边界标记，供 ES5 流式脚本抽取
+    check(html.includes('<div class="l-body" id="l-body">'), name + ' 缺少内容区起始标记');
+    check(html.includes('<!--L_BODY_END-->'), name + ' 缺少内容区结束标记');
+
+    if (r.split) {
+      check(html.includes('第 ' + p.index + ' / ' + r.parts.length + ' 页'),
+        name + ' 页码标记不正确');
+      // 只有非最后一片才带 id="l-next"（供流式脚本定位），顶部导航不得重复该 id
+      const nextIdCount = (html.match(/id="l-next"/g) || []).length;
+      check(nextIdCount === (p.index < r.parts.length ? 1 : 0),
+        name + ' id="l-next" 数量应为 ' + (p.index < r.parts.length ? 1 : 0) + '，实际 ' + nextIdCount);
+      if (p.index > 1) {
+        check(html.includes(partFilename(e.slug, p.index - 1)), name + ' 缺少上一页链接');
+      }
+      if (p.index < r.parts.length) {
+        check(html.includes(partFilename(e.slug, p.index + 1)), name + ' 缺少下一页链接');
+        check(html.includes('<!--L_NEXT:'), name + ' 缺少下一片地址标记');
+      }
+    }
+  }
+
+  // 首片沿用原文件名 → 旧链接 / 索引页 / 书签 / RSS 全部不失效
+  check(fs.existsSync(path.join(L_DIR, e.slug + '.html')),
+    e.slug + ' 首片文件名被改动，旧链接会失效');
+  // 不应有多余分片残留
+  check(!fs.existsSync(path.join(L_DIR, partFilename(e.slug, r.parts.length + 1))),
+    e.slug + ' 存在多余分片（清理不彻底）');
+}
+
+check(splitDocs > 0, '阈值 ' + SPLIT_THRESHOLD + ' 字节下没有任何文档被切分，分片逻辑可能失效');
+check(totalParts > entries.length, '分片总数未超过文档数');
+notes.push('分片：' + splitDocs + ' 份大文档 → ' + totalParts + ' 片（其余 ' +
+  (entries.length - splitDocs) + ' 份保持单页），无损校验通过');
+notes.push('单页体积：最大源文档 ' + (maxSource / 1024).toFixed(1) + ' KB → 最大产物页 ' +
+  (maxHtml / 1024).toFixed(1) + ' KB（' + biggestHtml + '），首屏下载量显著下降');
+
+/* ------------------------------------------------------------------ *
  * 3. CSS 编译产物：变量必须全部展开
  * ------------------------------------------------------------------ */
 const cssPath = path.join(L_DIR, 'legacy.css');
 check(fs.existsSync(cssPath), '缺少 legacy.css');
 if (fs.existsSync(cssPath)) {
   const css = fs.readFileSync(cssPath, 'utf8');
+  const cssBytes = Buffer.byteLength(css);
   check(!/var\(--/.test(css), 'legacy.css 仍含 var()（postcss-custom-properties 未生效）');
   check(css.includes('display: block'), 'legacy.css 缺少语义标签 display:block 重置');
-  notes.push('legacy.css ' + Buffer.byteLength(css) + ' 字节，var() 已展开');
+  notes.push('legacy.css ' + cssBytes + ' 字节，var() 已展开');
+  if (!INLINE_CSS) {
+    notes.push('CSS 外链可缓存：' + htmlFiles.length + ' 个页面省去约 ' +
+      ((cssBytes * (htmlFiles.length - 1)) / 1024).toFixed(1) + ' KB 重复样式下载');
+  }
 }
 
 /* ------------------------------------------------------------------ *

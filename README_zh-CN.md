@@ -73,14 +73,38 @@ Astro 会在 `src/pages/` 目录中寻找 `.astro` 或 `.md` 文件。每个页�
 
 | 路径 | 说明 |
 | --- | --- |
-| `/l/` | 适老化 / IE9 / Android 4.0 WebView 基础版：51 份资料全文 + 科目/类别静态索引 + RSS 说明页，答案默认展开，零 JS 可完整阅读 |
-| `/l/legacy.css` | 编译后的扁平化样式（CSS 变量已展开为静态值） |
-| `/l/enhance.js` | ES5 渐进增强脚本（字号切换 + 偏好继承），普通 `defer` script，非 module |
+| `/l/` | 适老化 / IE9 / Android 4.0 WebView 基础版：51 份资料在构建期切成 100 个静态片，另有科目/类别静态索引与 RSS 说明页；答案默认展开，零 JS 可完整阅读 |
+| `/l/<slug>.html` | 第 1 片，**URL 与分片前完全一致**（索引页 / RSS / 书签 / 旧链接均不失效） |
+| `/l/<slug>-2.html` … | 后续片，浏览器按需加载，未读的片不会被下载 |
+| `/l/legacy.css` | 编译后的扁平化样式（CSS 变量已展开为静态值），外链可缓存 |
+| `/l/enhance.js` | ES5 渐进增强（字号切换 + 偏好继承 + 滚到底自动续读下一片），普通 `defer` script，非 module |
 | `/rss.xml` | 全站 RSS 2.0 源（51 条） |
 | `/rss/subject-*.xml`、`/rss/category-*.xml` | 按科目 / 类别的栏目级订阅源（共 8 个） |
 | `/l/rss.xml`、`/l/rss/*.xml` | 同样内容的副本，供离线包自包含 |
 
 主站每页右上角有固定「长者版」入口，`<head>` 含 RSS 自动发现链接；基础版每页有「返回正常版」与订阅说明。
+
+### 大文档构建期分片与按需加载（PROMPT 7.8）
+
+**源文件一个字都不拆**：`src/content/专升本/**.md` 仍是 51 份完整文档。
+`npm run build` 时 `scripts/lib/split.mjs` 只在内存里把超过 24 KB 的 MD
+按**标题行边界**切成约 18 KB 一片，各自渲染成静态 HTML；切点避开表格、
+列表、题目块。所有片拼接后逐字符等于原 MD（无损强断言，失败即构建失败）。
+
+| 指标 | 分片前 | 分片后 |
+| --- | --- | --- |
+| 最大单页 HTML | 327 KB | 26.6 KB |
+| 最大文档首屏下载 | 327 KB（整篇） | 23.6 KB（第 1 片） |
+| 大文档 | 单页全量 | 8 份 → 100 片（其余 43 份保持单页） |
+| 110 个页面的重复 CSS | 内联约 570 KB | 外链可缓存，省约 558 KB |
+
+- **零 JS 基线**：每片都有「上一页 / 下一页 / 跳页目录」普通链接，
+  浏览器一次只请求当前片；不做 prefetch，未读的片不下载。
+- **可选 ES5 流式增强**：在线时滚到页尾用 `XMLHttpRequest` 拉下一片追加到
+  当前页，可连续续读；`file://` 离线打开自动禁用并回退到普通链接。
+- **离线包按整个 `/l/` 目录分发**，外链 `legacy.css` 用相对路径，在
+  `file://` 下同样可用。若确实需要「单个 HTML 拷走也能看」，用
+  `LEGACY_INLINE_CSS=1 npm run build` 切回全内联。
 
 ### 命令
 
@@ -95,11 +119,14 @@ Astro 会在 `src/pages/` 目录中寻找 `.astro` 或 `.md` 文件。每个页�
 
 ```bash
 SITE_URL=https://your.domain npm run build
+
+# 需要「单个 HTML 文件拷走也能看」时，把样式内联回去
+LEGACY_INLINE_CSS=1 npm run build
 ```
 
 ### 校验门禁
 
-`scripts/verify-legacy.mjs` 把 `PROMPT-zsb-tiku.md` 7.7 的验收清单代码化：断言产物中无 `type="module"`、`var(--`、grid、flex、`gap`、`clamp()`、`:is()`、`<details>`、`hidden`；校验 ES5、RSS XML 合法性与必填字段、`pubDate` 格式、`guid` 唯一、item 数与内容一致、link 指向真实预渲染页、分类字典与 `taxonomy.ts` 一致。任何一项失败都会让构建失败。
+`scripts/verify-legacy.mjs` 把 `PROMPT-zsb-tiku.md` 7.7 / 7.8 的验收清单代码化：断言产物中无 `type="module"`、`var(--`、grid、flex、`gap`、`clamp()`、`:is()`、`<details>`、`hidden`；校验**分片逐字符无损、首片 URL 不变、片链连续无残留、末片无下一页标记、单页体积上限**、样式加载方式、ES5、RSS XML 合法性与必填字段、`pubDate` 格式、`guid` 唯一、item 数与内容一致、link 指向真实预渲染页、分类字典与 `taxonomy.ts` 一致。任何一项失败都会让构建失败。
 
 ### 范围与未实现项（如实标注）
 
@@ -107,4 +134,5 @@ SITE_URL=https://your.domain npm run build
 - **未实现**：语音朗读（政务评测要求正文页至少实现）、邮件订阅（因此无退订流程）。二者未假装完成。
 - **偏好继承**以固定 URL + cookie 实现（字号选择），不做 UA 嗅探。
 - **TLS 边界**：Win7 上 IE9 默认不启用 TLS 1.2、Android < 7.1.1 不信任 ISRG Root X1，公网 HTTPS 可能在握手阶段失败。基础版的现实交付方式是内网 HTTP 或离线 HTML 包。
+- **离线包按目录分发**：分片后单篇资料由多个 HTML 组成，需整个 `/l/` 目录一起拷贝；`file://` 下自动续读脚本会自禁用，翻页链接照常可用。
 - **政务专属项**（党政机关标识、ICP 备案、「我为政府网站找错」入口、IPv6 改造）本项目不是政务站，未套用。

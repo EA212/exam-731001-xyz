@@ -49,6 +49,13 @@ export const SITE_URL = (process.env.SITE_URL || 'https://example.com').replace(
 export const SITE_TITLE = '专插本资料库';
 export const SITE_DESC = '专插本历年真题、背诵笔记与考点资料的结构化题库';
 
+/**
+ * /l/ 页面默认外链 legacy.css（可缓存、跨分片只下载一次，省带宽）。
+ * 需要「单个 HTML 拷走也能看」时：LEGACY_INLINE_CSS=1 npm run build 会把样式内联回去。
+ * 分片页按整个 /l/ 目录分发，外链相对路径在 file:// 下同样可用。
+ */
+export const INLINE_CSS = process.env.LEGACY_INLINE_CSS === '1';
+
 /** EdgeOne 适配器把静态资源放在 dist/client；兼容其他适配器直接放 dist */
 export function outDir() {
   const client = path.join(ROOT, 'dist/client');

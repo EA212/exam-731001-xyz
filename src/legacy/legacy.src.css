@@ -142,6 +142,44 @@ p { margin: 12px 0; }
 .l-body table { border-collapse: collapse; width: 100%; }
 .l-body th, .l-body td { border: 1px solid var(--l-border); padding: 8px; }
 
+/* 分片导航（7.8）：线性化、零 JS 可翻页、点击区 >= 44px */
+.l-pager {
+  border-top: 2px solid var(--l-border);
+  border-bottom: 2px solid var(--l-border);
+  margin: 24px 0;
+  padding: 12px 0;
+}
+.l-pageinfo {
+  background: var(--l-bar-bg);
+  border: 1px solid var(--l-border);
+  padding: 8px 12px;
+  color: var(--l-muted);
+  font-size: 0.9em;
+  margin: 0 0 12px 0;
+}
+.l-pagebadge {
+  font-size: 0.5em;
+  color: var(--l-muted);
+  font-weight: normal;
+  margin-left: 10px;
+}
+.l-pager-links { margin: 10px 0; }
+.l-toc { margin: 10px 0; line-height: 2.2; }
+.l-toc a {
+  display: inline-block;
+  min-width: 44px;
+  min-height: 44px;
+  line-height: 44px;
+  text-align: center;
+  border: 1px solid var(--l-border);
+  margin: 2px;
+  padding: 0 8px;
+  text-decoration: none;
+}
+.l-toc a.l-cur { background: var(--l-accent); color: var(--l-bg); font-weight: bold; }
+.l-loading { color: var(--l-muted); font-size: 0.9em; margin: 8px 0 0 0; }
+.l-btn.l-done { border-color: var(--l-muted); color: var(--l-muted); }
+
 .l-foot {
   border-top: 2px solid var(--l-border);
   background: var(--l-bar-bg);

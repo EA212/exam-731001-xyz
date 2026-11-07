@@ -9,8 +9,13 @@
  *   - 7.2 独立的适老化网站「页面内容应与原网站的主要内容保持一致」「扁平化」
  *   - 7.4 同一内容源、双份产物；不经过 Astro 的 Layout / 组件 / module script 链
  *   - 7.5 RSS 栏目级订阅、纯 XML 零 JS、自动发现
+ *   - 7.8 大文档构建期分片：源文件保持完整，只在产物里切开，按需加载
  *
- * 所有 /l/ 页面自包含（CSS 内联、JS 用相对路径），可单独打包成离线 HTML 包。
+ * /l/ 页面默认外链同目录 legacy.css（可缓存、跨分片只下载一次，省带宽），
+ * JS 用相对路径，整个目录可直接打包成离线 HTML 包用 file:// 打开；
+ * LEGACY_INLINE_CSS=1 可切回全内联，供「单个 HTML 文件拷走」的场景。
+ * 分片不改源文件：src/content/专升本/**.md 始终是一份完整文档，切分只发生在
+ * 构建期内存里，产物片按顺序拼接可逐字符还原原文（split.mjs 内置强断言）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +24,7 @@ import customProperties from 'postcss-custom-properties';
 import autoprefixer from 'autoprefixer';
 import { marked } from 'marked';
 import { loadEntries } from './lib/content.mjs';
+import { splitMarkdown, partFilename } from './lib/split.mjs';
 import {
   ROOT,
   LEGACY_CSS_SRC,
@@ -31,6 +37,7 @@ import {
   escHtml,
   escXml,
   lPrefix,
+  INLINE_CSS,
   writeText
 } from './lib/config.mjs';
 import { outDir } from './lib/config.mjs';
@@ -97,9 +104,11 @@ function page(opts) {
     '<meta name="description" content="' + escHtml(opts.description) + '">',
     '<link rel="alternate" type="application/rss+xml" title="' +
       escHtml(SITE_TITLE) + ' RSS" href="' + escHtml(SITE_URL) + '/rss.xml">',
-    '<style>',
-    opts.css,
-    '</style>',
+    // 外链可被浏览器缓存：分片后同一次阅读的 N 个页面只下载一次 CSS。
+    // LEGACY_INLINE_CSS=1 时回到全内联，供「单个 HTML 文件拷走」的场景。
+    INLINE_CSS
+      ? '<style>\n' + opts.css + '\n</style>'
+      : '<link rel="stylesheet" href="' + prefix + 'legacy.css">',
     '<script defer src="' + prefix + 'enhance.js"><\/script>',
     '</head>',
     '<body>',
@@ -147,6 +156,55 @@ function navLinks(entries, prefix) {
       categories.map((k) => a('category/' + k + '.html', CATEGORIES[k])).join(' · ') +
       '</div>'
   ].join('\n');
+}
+
+/* ------------------------------------------------------------------ *
+ * 2.1 分片导航（7.8）：零 JS 可翻页，ES5 脚本可选做滚到底自动续读
+ * ------------------------------------------------------------------ */
+function pager(slug, index, total, prefix, withIds) {
+  const hrefOf = (i) => prefix + partFilename(slug, i);
+  const a = (href, label, id) =>
+    '<a class="l-btn"' + (id ? ' id="' + id + '"' : '') +
+    ' href="' + escHtml(href) + '">' + escHtml(label) + '</a>';
+
+  const links = [];
+  if (index > 1) links.push(a(hrefOf(index - 1), '← 上一页'));
+  links.push(a(prefix + 'index.html', '资料库目录'));
+  // id="l-next" 只出现在页面底部那份导航，供 ES5 增强脚本定位；
+  // 顶部导航不带 id，避免同一页出现重复 ID。
+  if (index < total) links.push(a(hrefOf(index + 1), '下一页 →', withIds ? 'l-next' : ''));
+
+  const toc = [];
+  for (let i = 1; i <= total; i++) {
+    toc.push('<a class="' + (i === index ? 'l-cur' : '') +
+      '" href="' + escHtml(hrefOf(i)) + '">' + i + '</a>');
+  }
+
+  return [
+    '<div class="l-pager">',
+    '  <p class="l-pageinfo"' + (withIds ? ' id="l-pageinfo"' : '') + '>本资料共 ' + total +
+      ' 页，当前第 ' + index + ' / ' + total +
+      ' 页。按需加载：未读的页不会被下载，翻到本页末尾才会读取下一页。</p>',
+    '  <div class="l-pager-links">' + links.join(' ') + '</div>',
+    '  <div class="l-toc">跳到：' + toc.join(' ') + '</div>',
+    '  <p class="l-loading"' + (withIds ? ' id="l-loading"' : '') + '></p>',
+    '</div>'
+  ].join('\n');
+}
+
+/**
+ * 清理上一次构建留下的分片文件（源文档变小时片数会减少，避免残页）。
+ * 只删 <slug>-<数字>.html，绝不碰首片 <slug>.html 与其他文档。
+ */
+function cleanOldParts(slug) {
+  const dir = path.join(L_DIR, path.dirname(slug));
+  const base = path.basename(slug);
+  if (!fs.existsSync(dir)) return;
+  for (const name of fs.readdirSync(dir)) {
+    if (name.indexOf(base + '-') === 0 && /-\d+\.html$/.test(name)) {
+      fs.unlinkSync(path.join(dir, name));
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -255,33 +313,64 @@ async function main() {
     }));
   }
 
-  // ---- 4.3 每份资料全文（答案默认展开，线性化） ----
+  // ---- 4.3 每份资料全文（答案默认展开、线性化；大文档构建期分片） ----
+  // 源文件保持完整，切分只作用于构建期内存；片按顺序拼接 === 原 md。
+  let partCount = 0;
+  let splitDocCount = 0;
   for (const e of entries) {
-    const file = path.join(L_DIR, e.slug + '.html');
-    const prefix = lPrefix(file, L_DIR);
-    const markedHtml = String(await marked.parse(e.body))
-      .replace(/<script[\s\S]*?<\/script>/gi, '');
-    const body = [
-      '<p class="l-crumb"><a href="' + prefix + 'index.html">资料库</a> / ' +
-        '<a href="' + prefix + 'subject/' + e.subjectKey + '.html">' + escHtml(e.subjectLabel) +
-        '</a> / 正文</p>',
-      '<h1>' + escHtml(e.title) + '</h1>',
-      '<p class="l-meta">科目：' + escHtml(e.subjectLabel) +
-        '　类别：' + escHtml(e.categoryLabel) +
-        (e.year ? '　年份：' + e.year + ' 年' : '') +
-        '　答案：' + (e.answerProvided ? '原卷提供' : '原卷未提供') +
-        '　解析：' + (e.analysisProvided ? '原卷提供' : '原卷未提供') + '</p>',
-      '<p class="l-note">答案与解析默认全部展开，无折叠、无 tab 页；本页无需 JavaScript，可直接打印或另存。</p>',
-      '<div class="l-body">',
-      markedHtml,
-      '</div>',
-      '<p><a class="l-btn" href="' + prefix + 'index.html">← 返回资料库</a></p>'
-    ].join('\n');
-    writeText(file, page({
-      title: e.title,
-      description: (e.excerpt || e.title).slice(0, 150),
-      bodyHtml: body, css, prefix
-    }));
+    cleanOldParts(e.slug);
+    const { parts, split } = splitMarkdown(e.body);
+    const total = parts.length;
+    if (split) splitDocCount++;
+    partCount += total;
+
+    for (const part of parts) {
+      const file = path.join(L_DIR, partFilename(e.slug, part.index));
+      const prefix = lPrefix(file, L_DIR);
+      const markedHtml = String(await marked.parse(part.md))
+        .replace(/<script[\s\S]*?<\/script>/gi, '');
+
+      const badge = total > 1
+        ? '<span class="l-pagebadge">（第 ' + part.index + ' / ' + total + ' 页）</span>'
+        : '';
+      const head = [
+        '<p class="l-crumb"><a href="' + prefix + 'index.html">资料库</a> / ' +
+          '<a href="' + prefix + 'subject/' + e.subjectKey + '.html">' + escHtml(e.subjectLabel) +
+          '</a> / 正文</p>',
+        '<h1>' + escHtml(e.title) + badge + '</h1>',
+        part.index === 1
+          ? '<p class="l-meta">科目：' + escHtml(e.subjectLabel) +
+              '　类别：' + escHtml(e.categoryLabel) +
+              (e.year ? '　年份：' + e.year + ' 年' : '') +
+              '　答案：' + (e.answerProvided ? '原卷提供' : '原卷未提供') +
+              '　解析：' + (e.analysisProvided ? '原卷提供' : '原卷未提供') + '</p>'
+          : '<p class="l-note">本页接续上文，为同一份资料的拆分片段；内容连续、无删减。</p>',
+        '<p class="l-note">答案与解析默认全部展开，无折叠、无 tab 页；本页无需 JavaScript，可直接打印或另存。</p>'
+      ];
+
+      const nextHref = part.index < total
+        ? prefix + partFilename(e.slug, part.index + 1)
+        : '';
+
+      const body = [
+        ...head,
+        total > 1 ? pager(e.slug, part.index, total, prefix, false) : '',
+        '<div class="l-body" id="l-body">',
+        markedHtml,
+        '<!--L_BODY_END-->',
+        '</div>',
+        // ES5 增强脚本据此推算下一片地址；最后一页留空表示终止。
+        '<!--L_NEXT:' + nextHref + '-->',
+        total > 1 ? pager(e.slug, part.index, total, prefix, true) : '',
+        '<p><a class="l-btn" href="' + prefix + 'index.html">← 返回资料库</a></p>'
+      ].filter(Boolean).join('\n');
+
+      writeText(file, page({
+        title: e.title + (total > 1 ? '（第 ' + part.index + ' / ' + total + ' 页）' : ''),
+        description: (e.excerpt || e.title).slice(0, 150),
+        bodyHtml: body, css, prefix
+      }));
+    }
   }
 
   // ---- 4.4 RSS（全站 + 分频道），同时写一份到 l/ 供离线包自包含 ----
@@ -354,7 +443,9 @@ async function main() {
     .filter((f) => String(f).endsWith('.html')).length;
 
   console.log('[build-legacy] 输出目录: ' + path.relative(ROOT, OUT_ROOT));
-  console.log('[build-legacy] 内容条目: ' + entries.length + ' 份');
+  console.log('[build-legacy] 内容条目: ' + entries.length + ' 份（源文件保持完整、未切分）');
+  console.log('[build-legacy] 构建期分片: ' + splitDocCount + ' 份大文档 → ' + partCount +
+    ' 片；其余 ' + (entries.length - splitDocCount) + ' 份保持单页');
   console.log('[build-legacy] /l/ 页面: ' + htmlCount + ' 个（含索引与订阅说明）');
   console.log('[build-legacy] RSS 源:   ' + feeds.length + ' 个（全站 1 + 科目 ' +
     usedSubjects.length + ' + 类别 ' + usedCategories.length + '），各写 2 份');
