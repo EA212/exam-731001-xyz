@@ -2,8 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import { CATEGORIES, SUBJECTS, countObjectiveQuestions } from '../../lib/taxonomy';
-import '../../styles/zsb.css';
-import '../../styles/quiz.css';
+import '../../styles/site.css';
 
 export const prerender = true;
 
@@ -44,7 +43,7 @@ const grouped = subjectKeys
         · 支持按科目、类别、年份筛选与在线答题
       </p>
       <p class="zsb-hero-actions">
-        <a class="zsb-btn primary" href="/zsb/wrong/">📕 我的错题本</a>
+        <a class="zsb-btn primary" href="/zsb/wrong/">我的错题本</a>
       </p>
     </header>
 
@@ -97,7 +96,6 @@ const grouped = subjectKeys
           id="zsb-search"
           class="zsb-chip"
           placeholder="输入关键词…"
-          style="cursor:text;min-width:11rem;"
         />
       </div>
     </div>

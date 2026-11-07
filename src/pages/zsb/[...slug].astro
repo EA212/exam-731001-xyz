@@ -2,8 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, render } from 'astro:content';
 import { CATEGORIES, QUESTION_TYPES, countObjectiveQuestions } from '../../lib/taxonomy';
-import '../../styles/zsb.css';
-import '../../styles/quiz.css';
+import '../../styles/site.css';
 
 export const prerender = true;
 
@@ -28,9 +27,9 @@ const gradable = countObjectiveQuestions(entry.body ?? '');
 <Layout title={d.title}>
   <main class="zsb-doc" id="zsb-doc" data-doc-id={entry.id} data-doc-title={d.title}>
     <div class="zsb-doc-toolbar">
-      <a class="zsb-btn" href="/zsb/">← 返回资料库</a>
+      <a class="zsb-btn" href="/zsb/">返回资料库</a>
       {gradable > 0 ? (
-        <button class="zsb-btn primary" id="start-quiz" type="button">▶ 开始答题</button>
+        <button class="zsb-btn primary" id="start-quiz" type="button">开始答题</button>
       ) : (
         <span class="zsb-btn is-disabled" title="本页为背诵/笔记类资料，无客观题">无可答题</span>
       )}

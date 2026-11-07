@@ -284,7 +284,7 @@ export function initQuiz(): void {
   function headerHtml(): string {
     return `
       <div class="quiz-top">
-        <button class="quiz-icon-btn" id="quiz-close" type="button" title="退出答题">✕</button>
+        <button class="quiz-icon-btn" id="quiz-close" type="button" title="退出答题">×</button>
         <div class="quiz-top-info">
           <span class="quiz-pos" id="quiz-pos"></span>
           <span class="quiz-dot">·</span>
@@ -676,7 +676,7 @@ export function initQuiz(): void {
                    )
                    .join('')}
                </div>`
-            : `<p class="quiz-perfect">全部答对，漂亮！🎉</p>`
+            : `<p class="quiz-perfect">全部答对</p>`
         }
         <div class="quiz-setup-actions">
           ${
@@ -757,7 +757,7 @@ function optionHtml(o: QuizOption, q: ParsedQ, picked: string, graded: boolean):
 function feedbackHtml(q: ParsedQ, picked: string): string {
   const ok = q.type === 'panduan' ? picked === q.answer : picked.replace(/\W/g, '') === q.answer;
   return `<div class="quiz-feedback ${ok ? 'ok' : 'bad'}">
-    <div class="qf-title">${ok ? '✅ 回答正确' : '❌ 回答错误'}</div>
+    <div class="qf-title">${ok ? '回答正确' : '回答错误'}</div>
     <div class="qf-answer">正确答案：<b>${esc(q.answer || '—')}</b>${picked ? ` · 你选了 <b>${esc(picked)}</b>` : ''}</div>
     ${q.analysis ? `<div class="qf-analysis">${esc(q.analysis)}</div>` : ''}
   </div>`;

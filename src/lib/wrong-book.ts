@@ -166,7 +166,7 @@ export function initWrongBook(): void {
       panel.hidden = false;
       panel.innerHTML = `
         <div class="quiz-top">
-          <button class="quiz-icon-btn" id="redo-close" type="button">✕</button>
+          <button class="quiz-icon-btn" id="redo-close" type="button">×</button>
           <div class="quiz-top-info"><span>错题重做</span><span class="quiz-dot">·</span><span>${i + 1} / ${list.length}</span></div>
           <span class="quiz-icon-btn" style="visibility:hidden">·</span>
         </div>
@@ -192,7 +192,7 @@ export function initWrongBook(): void {
           ${
             graded
               ? `<div class="quiz-feedback ${isRight(chosen) ? 'ok' : 'bad'}">
-                   <div class="qf-title">${isRight(chosen) ? '✅ 答对了' : '❌ 又错了'}</div>
+                   <div class="qf-title">${isRight(chosen) ? '答对了' : '又错了'}</div>
                    <div class="qf-answer">正确答案：<b>${esc(w.answer)}</b> · 你选了 <b>${esc(chosen)}</b> · 这是第 ${w.wrongCount + (isRight(chosen) ? 0 : 1)} 次错</div>
                    ${w.analysis ? `<div class="qf-analysis">${esc(w.analysis)}</div>` : ''}
                  </div>`
