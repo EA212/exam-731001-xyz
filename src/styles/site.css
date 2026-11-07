@@ -42,14 +42,28 @@ a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 button, input, select { font: inherit; }
 
-/* 长者版入口：低调文字，仍保留 44px 点击区与明显焦点 */
-.legacy-entry {
-  position: fixed; top: 8px; right: 12px; z-index: 50;
-  display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px;
-  color: var(--muted); font-size: 13px; text-decoration: none;
-}
+.site-header { border-bottom: 1px solid var(--line); }
+.site-header-inner, .site-crumb-inner { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+.site-header-inner { display: flex; align-items: center; gap: 20px; min-height: 52px; }
+.site-brand { flex: 0 0 auto; font-weight: 650; font-size: .9375rem; color: var(--fg); }
+.site-brand:hover { color: var(--brand); text-decoration: none; }
+.site-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
+.site-nav-link { display: inline-flex; align-items: center; min-height: 52px; padding: 0 12px; color: var(--muted); font-size: .875rem; border-bottom: 2px solid transparent; }
+.site-nav-link:hover { color: var(--brand); text-decoration: none; }
+.site-nav-link.is-current { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+.legacy-entry { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: var(--muted); font-size: .8125rem; }
 .legacy-entry:hover { color: var(--brand); text-decoration: none; }
-.legacy-entry:focus { outline: 3px solid var(--brand); background: var(--brand-soft); }
+.site-crumb { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--line); background: var(--bg); }
+.site-crumb-inner { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 36px; font-size: .75rem; color: var(--muted); }
+.site-crumb a { color: var(--muted); }
+.site-crumb a:hover { color: var(--brand); }
+.site-crumb-current { color: var(--fg); }
+.site-crumb-sep { color: var(--faint); }
+.home-page { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
+.home-page h1 { font-size: 1.5rem; margin: 0 0 8px; }
+.home-lead { color: var(--muted); font-size: .875rem; line-height: 1.7; margin: 0 0 24px; }
+.home-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-actions .zsb-btn { min-height: 40px; padding: 8px 16px; font-size: .875rem; }
 
 /* ---------------------------- 通用容器 ---------------------------- */
 .zsb-page, .zsb-doc { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
@@ -133,7 +147,6 @@ input.zsb-chip { cursor: text; width: 148px; }
 /* ---------------------------- 详情页 ---------------------------- */
 .zsb-doc { max-width: 780px; overflow-wrap: break-word; }
 .zsb-doc-toolbar {
-  position: sticky; top: 0; z-index: 20;
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 10px 0; margin-bottom: 12px;
   background: var(--bg); border-bottom: 1px solid var(--line);
@@ -177,7 +190,7 @@ input.zsb-chip { cursor: text; width: 148px; }
 
 @media print {
   .zsb-doc .exam-answer, .zsb-doc .exam-analysis, .zsb-doc .exam-point { display: block !important; }
-  .zsb-doc-toolbar, .zsb-filters, .legacy-entry, .zsb-hero-actions { display: none !important; }
+  .site-header, .site-crumb, .zsb-doc-toolbar, .zsb-filters { display: none !important; }
 }
 
 /* ------------------------------ 答题 ------------------------------ */
@@ -344,5 +357,7 @@ input.zsb-chip { cursor: text; width: 148px; }
   .wb-stat b { font-size: 1.25rem; }
   .wb-time { margin-left: 0; width: 100%; }
   .wb-select { max-width: 100%; flex: 1 1 120px; }
-  .legacy-entry { top: 4px; right: 8px; font-size: 12px; }
+  .site-header-inner { gap: 8px; padding: 0 12px; }
+  .site-nav-link { padding: 0 8px; }
+  .site-crumb-inner { padding: 0 12px; }
 }

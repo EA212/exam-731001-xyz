@@ -27,7 +27,6 @@ const gradable = countObjectiveQuestions(entry.body ?? '');
 <Layout title={d.title}>
   <main class="zsb-doc" id="zsb-doc" data-doc-id={entry.id} data-doc-title={d.title}>
     <div class="zsb-doc-toolbar">
-      <a class="zsb-btn" href="/zsb/">返回资料库</a>
       {gradable > 0 ? (
         <button class="zsb-btn primary" id="start-quiz" type="button">开始答题</button>
       ) : (
@@ -36,7 +35,6 @@ const gradable = countObjectiveQuestions(entry.body ?? '');
       {d.answerProvided && (
         <button class="zsb-btn" id="toggle-answers" type="button">显示答案</button>
       )}
-      <a class="zsb-btn" href="/zsb/wrong/">错题本</a>
       <button class="zsb-btn" type="button" onclick="window.print()">打印</button>
     </div>
 
