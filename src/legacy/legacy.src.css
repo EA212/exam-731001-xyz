@@ -1,0 +1,159 @@
+/*
+ * 适老化 / 旧浏览器基础版样式源
+ *
+ * 构建期由 scripts/build-legacy.mjs 用 PostCSS 编译：
+ *   postcss-custom-properties { preserve: false }  → 把 var() 全部展开为静态值
+ *   autoprefixer (ie >= 9, Android >= 4)          → 补 -webkit- 等前缀
+ * 产物内联进 /l/ 的每一个 HTML，保证 file:// 离线打开也完整可用。
+ *
+ * 硬约束（见 PROMPT-zsb-tiku.md 7.2 / 7.4）：
+ *   - 不使用弹性盒、网格布局、间隙属性、现代关系选择器与特性查询
+ *   - 不使用阴影、渐变、纹理等复杂装饰
+ *   - 颜色字号写死，布局用 inline-block + 百分比 + float
+ *   - 不隐藏任何内容（无 tab 页、无折叠），答案默认展开
+ *   - 正文 >= 18px、行高 200%、字距 1px、焦点可见、点击区 >= 44px
+ */
+
+:root {
+  --l-text: #111111;
+  --l-bg: #ffffff;
+  --l-muted: #444444;
+  --l-border: #999999;
+  --l-accent: #0b4f9c;
+  --l-bar-bg: #f2f2f2;
+}
+
+/* IE8 及以下不认识 HTML5 语义标签（需配合 html5shiv）；IE9 起认识，但显式声明更稳 */
+main, section, nav, header, footer, article, aside, figure, figcaption {
+  display: block;
+}
+[hidden] { display: none; }
+
+html {
+  background: var(--l-bg);
+  color: var(--l-text);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Microsoft YaHei", "SimHei", "Heiti SC", Arial, sans-serif;
+  font-size: 19px;
+  line-height: 2;
+  letter-spacing: 1px;
+  background: var(--l-bg);
+  color: var(--l-text);
+}
+
+/* 字号切换（由 enhance.js 写入 cookie，零 JS 时使用默认字号） */
+body.l-large { font-size: 24px; }
+body.l-xlarge { font-size: 30px; }
+
+a { color: var(--l-accent); }
+
+/* 焦点必须明显可见，支持纯键盘操作 */
+a:focus, input:focus, button:focus {
+  outline: 3px solid #cc2200;
+  background: #fff4cc;
+}
+
+/* 扁平化顶部条：无阴影、无渐变、无圆角 */
+.l-bar {
+  background: var(--l-bar-bg);
+  border-bottom: 2px solid var(--l-border);
+  padding: 10px 16px;
+  overflow: hidden;
+}
+
+.l-brand {
+  font-weight: bold;
+  padding: 0 12px;
+  color: var(--l-text);
+}
+
+.l-tools { color: var(--l-muted); }
+
+.l-btn {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 14px;
+  margin: 2px 6px 2px 0;
+  border: 2px solid var(--l-accent);
+  background: var(--l-bg);
+  color: var(--l-accent);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.l-btn:hover, .l-btn:focus { background: var(--l-accent); color: var(--l-bg); }
+
+.l-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px 40px 16px;
+}
+
+.l-crumb {
+  font-size: 0.9em;
+  color: var(--l-muted);
+  border-bottom: 1px solid var(--l-border);
+  padding-bottom: 8px;
+}
+
+h1 { font-size: 1.8em; line-height: 1.4; margin: 24px 0 12px 0; }
+h2 { font-size: 1.5em; line-height: 1.5; margin: 28px 0 12px 0; border-bottom: 2px solid var(--l-border); padding-bottom: 6px; }
+h3 { font-size: 1.2em; line-height: 1.6; margin: 20px 0 8px 0; }
+p { margin: 12px 0; }
+
+.l-meta {
+  background: var(--l-bar-bg);
+  border: 1px solid var(--l-border);
+  padding: 10px 14px;
+  color: var(--l-muted);
+}
+
+.l-note {
+  border-left: 6px solid var(--l-accent);
+  padding: 8px 14px;
+  background: var(--l-bar-bg);
+}
+
+/* 线性化列表：纯 <a>，点击区域 >= 44px，零 JS 可用 */
+.l-list { list-style: none; margin: 0; padding: 0; }
+.l-list li { border-bottom: 1px solid var(--l-border); }
+.l-list a {
+  display: block;
+  min-height: 44px;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+.l-list a:hover, .l-list a:focus { background: var(--l-bar-bg); }
+.l-list .l-list-meta { display: block; font-size: 0.85em; color: var(--l-muted); }
+
+.l-nav { margin: 16px 0; }
+.l-nav a { display: inline-block; min-height: 44px; line-height: 44px; padding: 0 12px; }
+
+/* 题目正文：线性化、答案默认展开，不做任何折叠 */
+.l-body { margin-top: 24px; }
+.l-body ul, .l-body ol { padding-left: 2em; }
+.l-body li { margin: 6px 0; }
+.l-body hr { border: 0; border-top: 1px solid var(--l-border); margin: 24px 0; }
+.l-body table { border-collapse: collapse; width: 100%; }
+.l-body th, .l-body td { border: 1px solid var(--l-border); padding: 8px; }
+
+.l-foot {
+  border-top: 2px solid var(--l-border);
+  background: var(--l-bar-bg);
+  padding: 16px;
+  color: var(--l-muted);
+  font-size: 0.9em;
+}
+.l-foot a { display: inline-block; min-height: 44px; line-height: 44px; padding: 0 8px; }
+
+@media (max-width: 600px) {
+  body { font-size: 18px; }
+  .l-main { padding: 12px 10px 30px 10px; }
+  .l-bar { padding: 8px 10px; }
+  h1 { font-size: 1.5em; }
+}

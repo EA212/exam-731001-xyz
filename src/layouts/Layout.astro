@@ -8,18 +8,21 @@ export interface Props {
 const { title } = Astro.props as Props;
 ---
 
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/x-icon" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title} | EdgeOne Makers</title>
-      <meta name="description" content="Demo only · EdgeOne Makers" />
-    <meta name="keywords" content="EdgeOne Makers, Demo only" />
-</head>
+    <title>{title} | 专插本资料库</title>
+    <meta name="description" content={title + " · 专插本历年真题与资料的结构化题库"} />
+    <meta name="keywords" content="专插本, 题库, 真题, 民法, 政治理论" />
+    <link rel="alternate" type="application/rss+xml" title="专插本资料库 RSS" href="/rss.xml" />
+  </head>
   <body>
+    <a class="legacy-entry" href="/l/" title="适老化 / 旧浏览器基础版">长者版</a>
     <slot />
     <PageNavigator />
   </body>
@@ -161,5 +164,32 @@ const { title } = Astro.props as Props;
     body {
       padding-bottom: 3.4rem;
     }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 适老化 / 旧浏览器基础版固定入口（政务「长者版」做法）
+   * 固定位置 + 44px 点击区 + 明显焦点，符合 PROMPT-zsb-tiku.md 7.2
+   * ------------------------------------------------------------------ */
+  :global(.legacy-entry) {
+    position: fixed;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 9999;
+    display: inline-block;
+    min-height: 44px;
+    line-height: 44px;
+    padding: 0 14px;
+    background: #ffffff;
+    color: #0b4f9c;
+    border: 2px solid #0b4f9c;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  :global(.legacy-entry:focus) {
+    outline: 3px solid #cc2200;
+    background: #fff4cc;
   }
 </style>

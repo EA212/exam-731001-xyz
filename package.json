@@ -6,6 +6,10 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro check && astro build",
+    "postbuild": "node scripts/build-legacy.mjs && node scripts/verify-legacy.mjs",
+    "build:legacy": "node scripts/build-legacy.mjs",
+    "verify:legacy": "node scripts/verify-legacy.mjs",
+    "check:es5": "es-check es5 dist/client/l/enhance.js",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -26,7 +30,16 @@
     "vue": "^3.5.22"
   },
   "devDependencies": {
-    "commander": "^14.0.2"
+    "autoprefixer": "^10.6.2",
+    "commander": "^14.0.2",
+    "es-check": "^9.8.1",
+    "gray-matter": "^4.0.3",
+    "postcss": "^8.5.32",
+    "postcss-custom-properties": "^15.0.4"
+  },
+  "browserslist": {
+    "production": ["defaults"],
+    "legacy": ["ie >= 9", "Android >= 4"],
+    "development": ["last 1 chrome version", "last 1 firefox version"]
   }
 }
-
