@@ -97,6 +97,7 @@ const grouped = subjectKeys
       </div>
     </div>
 
+    <div class="zsb-results">
     {grouped.map((g) => (
       <section data-subject-group={g.key}>
         <h2 class="zsb-group-title">
@@ -147,6 +148,7 @@ const grouped = subjectKeys
     ))}
 
     <p class="zsb-empty" id="zsb-empty" hidden>没有符合条件的资料</p>
+    </div>
   </main>
 
   <script>

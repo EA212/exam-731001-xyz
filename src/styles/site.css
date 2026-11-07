@@ -69,9 +69,10 @@ main { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
 .zsb-filter-group::-webkit-scrollbar { display: none; }
 .zsb-filter-group > span { flex: 0 0 auto; position: sticky; left: 0; z-index: 1; background: var(--c-bg); color: var(--c-faint); font-size: .75rem; padding-right: 4px; }
 .zsb-chip, .quiz-chip { padding: 5px 10px; min-height: 32px; color: var(--c-muted); font-size: .8125rem; cursor: pointer; white-space: nowrap; }
-.zsb-chip:hover, .quiz-chip:hover { border-color: var(--c-brand); color: var(--c-brand); }
+.zsb-chip:hover:not(.is-active), .quiz-chip:hover:not(.on) { border-color: var(--c-brand); color: var(--c-brand); }
 input.zsb-chip { cursor: text; width: 148px; }
 .zsb-empty, .wb-empty { padding: 40px 0; text-align: center; color: var(--c-faint); font-size: .875rem; }
+.zsb-results { min-height: 100vh; }
 
 .zsb-group-title { display: flex; align-items: baseline; gap: 8px; margin: 26px 0 10px; font-size: 1.0625rem; }
 .zsb-group-title small { font-size: .75rem; font-weight: 400; color: var(--c-faint); }
