@@ -41,6 +41,7 @@ export interface QuizConfig {
   title?: string;
   instant?: boolean;
   autoNext?: boolean;
+  pace?: { right?: number; wrong?: number };
   settings?: boolean;
   wrongBookUrl?: string;
   note?: string;
@@ -210,7 +211,7 @@ export function createQuizPlayer(cfg: QuizConfig): QuizPlayer {
   function maybeAuto(ok: boolean): void {
     clearAuto();
     if (cfg.autoNext === false || !instant || idx >= order.length - 1) return;
-    const delay = ok ? 900 : 1600;
+    const delay = ok ? (cfg.pace?.right ?? 900) : (cfg.pace?.wrong ?? 1600);
     const bar = root.querySelector<HTMLElement>('.quiz-next-bar i');
     if (bar) bar.style.animationDuration = `${delay}ms`;
     root.classList.add('is-autonext');

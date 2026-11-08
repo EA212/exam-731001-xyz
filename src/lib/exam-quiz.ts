@@ -21,6 +21,7 @@ import {
   isCorrect,
 } from './quiz-player';
 import { normalizeObjectiveAnswer } from './taxonomy';
+import { attachTheme, currentTheme, type ThemeSource } from '../themes';
 
 export type ParsedQ = QuizQuestion & { rawAnswer: string };
 
@@ -175,17 +176,36 @@ export function initQuiz(): void {
     subject,
   };
 
-  const pool = parseQuestions(article, ctx).filter(isGradable);
+  const all = parseQuestions(article, ctx);
+  const pool = all.filter(isGradable);
   const byId = new Map<string, QuizQuestion>(pool.map((q) => [q.id, q]));
   wireAnswerToggle(doc);
   renderDocStats();
+
+  const sources: ThemeSource[] = all.length
+    ? all.map((q) => ({
+        id: q.id,
+        label: `${q.typeName.replace(/题$/, '')} ${q.num}`,
+        detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : '', q.analysis]
+          .filter(Boolean)
+          .join('\n')
+          .slice(0, 200),
+        gradable: isGradable(q),
+      }))
+    : Array.from(article.querySelectorAll('h2, h3')).map((h, i) => ({
+        id: `h${i}`,
+        label: (h.textContent || '').trim().slice(0, 16) || `章节 ${i + 1}`,
+        detail: (h.nextElementSibling?.textContent || '').trim().slice(0, 200),
+        gradable: false,
+      }));
+  const binding = attachTheme(currentTheme(), title, sources, article);
 
   const btn = document.getElementById('start-quiz') as HTMLButtonElement | null;
   if (!pool.length) {
     if (btn) {
       btn.disabled = true;
-      btn.title = '本页没有可自动判分的客观题';
-      btn.textContent = '暂无可答题';
+      btn.title = binding ? '本页无客观题，请在下方知识树里展开知识点' : '本页没有可自动判分的客观题';
+      btn.textContent = binding ? '请用知识树探索' : '暂无可答题';
     }
     return;
   }
@@ -210,6 +230,7 @@ export function initQuiz(): void {
     questions: pool,
     title,
     instant: getSettings().instant,
+    pace: binding?.pace,
     note: `数据保存在本机浏览器（${storageMode()}），不会上传。可在「错题本」里复习。`,
     setupActions: [
       ...(canResume
@@ -256,6 +277,7 @@ export function initQuiz(): void {
         });
       }
       renderDocStats();
+      binding?.onGrade(q, pick, ok);
     },
     onStateChange: (snap): void => {
       const order = snap.ids.map((id) => byId.get(id)).filter((q): q is QuizQuestion => !!q);
@@ -289,6 +311,7 @@ export function initQuiz(): void {
       };
       saveSession(session);
     },
+    onFinish: (r): void => binding?.onFinish(r),
     onClose: (): void => {
       doc.classList.remove('quiz-active');
       renderDocStats();

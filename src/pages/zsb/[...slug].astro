@@ -30,7 +30,7 @@ const gradable = countObjectiveQuestions(entry.body ?? '');
       {gradable > 0 ? (
         <button class="zsb-btn primary" id="start-quiz" type="button">开始答题</button>
       ) : (
-        <span class="zsb-btn is-disabled" title="本页为背诵/笔记类资料，无客观题">无可答题</span>
+        <button class="zsb-btn is-disabled" id="start-quiz" type="button" disabled title="本页为背诵/笔记类资料，无客观题">无可答题</button>
       )}
       {d.answerProvided && (
         <button class="zsb-btn" id="toggle-answers" type="button">显示答案</button>

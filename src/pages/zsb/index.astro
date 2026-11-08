@@ -153,6 +153,19 @@ const grouped = subjectKeys
 
   <script>
     import { getProgressMap, getSeenMap, getStats } from '../../lib/exam-store';
+    import { currentTheme } from '../../themes';
+
+    const theme = currentTheme();
+    if (theme) {
+      const bar = document.createElement('div');
+      bar.className = 'theme-bar';
+      bar.style.setProperty('--accent', theme.accent);
+      bar.innerHTML = `<b>◇ ${theme.name}</b><span>${theme.tagline}</span><a href="/zsb/?theme=none">退出主题</a>`;
+      document.querySelector('.zsb-hero')?.after(bar);
+      document.querySelectorAll<HTMLAnchorElement>('.zsb-card').forEach((a) => {
+        a.href = `${a.getAttribute('href')}?theme=${encodeURIComponent(theme.id)}`;
+      });
+    }
 
     /* ------------------ 刷题总览 ------------------ */
     const stats = getStats();

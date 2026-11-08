@@ -17,6 +17,7 @@ import {
   KEY_WRONG,
 } from './exam-store';
 import { createQuizPlayer, type QuizQuestion, type QuizPlayer } from './quiz-player';
+import { attachTheme, currentTheme, type ThemeBinding, type ThemeSource } from '../themes';
 
 type Filter = 'pending' | 'mastered' | 'all';
 
@@ -155,6 +156,7 @@ export function initWrongBook(): void {
 
   /* ------------------------------ 重做 ------------------------------ */
   let redoPlayer: QuizPlayer | null = null;
+  let redoTheme: ThemeBinding | null = null;
 
   function startRedo(list: WrongRecord[]): void {
     const panel = document.getElementById('wb-redo-panel') as HTMLElement | null;
@@ -171,14 +173,25 @@ export function initWrongBook(): void {
       point: w.point,
       source: w.docTitle,
     }));
+    if (!redoTheme) {
+      const sources: ThemeSource[] = questions.map((q) => ({
+        id: q.id,
+        label: `第 ${q.num} 题`,
+        detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : ''].filter(Boolean).join('\n'),
+        gradable: true,
+      }));
+      redoTheme = attachTheme(currentTheme(), '错题重做', sources, panel);
+    }
     if (!redoPlayer) {
       redoPlayer = createQuizPlayer({
         mount: panel,
         questions,
         title: '错题重做',
         settings: false,
+        pace: redoTheme?.pace,
         wrongBookUrl: '/zsb/wrong/',
-        onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
+        onGrade: (q, pick, ok): void => { if (ok) markWrongMastered(q.id, true); redoTheme?.onGrade(q, pick, ok); },
+        onFinish: (r): void => redoTheme?.onFinish(r),
         onClose: (): void => { renderList(); renderStats(); },
       });
     }
