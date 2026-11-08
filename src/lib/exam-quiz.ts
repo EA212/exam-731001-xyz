@@ -19,7 +19,7 @@ import {
   isCorrect,
 } from './quiz-player';
 import { normalizeObjectiveAnswer } from './taxonomy';
-import { attachTheme, currentTheme, type ThemeHost, type ThemeSource } from '../themes';
+import { attachTheme, currentTheme, clearTheme, type ThemeHost } from '../themes';
 
 export type ParsedQ = QuizQuestion & { rawAnswer: string };
 
@@ -180,22 +180,6 @@ export function initQuiz(): void {
   wireAnswerToggle(doc);
   renderDocStats();
 
-  const sources: ThemeSource[] = all.length
-    ? all.map((q) => ({
-        id: q.id,
-        label: `${q.typeName.replace(/题$/, '')} ${q.num}`,
-        detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : '', q.analysis]
-          .filter(Boolean)
-          .join('\n')
-          .slice(0, 200),
-        gradable: isGradable(q),
-      }))
-    : Array.from(article.querySelectorAll('h2, h3')).map((h, i) => ({
-        id: `h${i}`,
-        label: (h.textContent || '').trim().slice(0, 16) || `章节 ${i + 1}`,
-        detail: (h.nextElementSibling?.textContent || '').trim().slice(0, 200),
-        gradable: false,
-      }));
   const wrongQs = (): QuizQuestion[] =>
     Object.values(getWrongMap())
       .filter((w) => w.docId === ctx.docId && !w.mastered)
@@ -262,31 +246,38 @@ export function initQuiz(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const themeHost: ThemeHost = {
-    questions: pool,
-    variants: wrongQs().length
-      ? [{ id: 'wrong', label: `只练本卷错题（${wrongQs().length}）`, questions: wrongQs() }]
-      : [],
-    onLaunch: (): void => doc!.classList.add('quiz-active'),
-    onGrade: hostGrade,
-    onStateChange: hostState,
-    onFinish: (): void => renderDocStats(),
-    onClose: hostClose,
-  };
-  const binding = attachTheme(currentTheme(), title, sources, article, themeHost);
+  const theme = currentTheme();
+  if (theme) {
+    const notes = all.filter((q) => !isGradable(q)).map((q) => q.stem.split('\n')[0]).filter(Boolean).slice(0, 40);
+    const host: ThemeHost = {
+      questions: pool,
+      chapters: [{ label: '选择关卡', href: `/zsb/?theme=${theme.id}`, meta: '切换试卷' }],
+      variants: wrongQs().length
+        ? [{ id: 'wrong', label: `只练本卷错题（${wrongQs().length}）`, questions: wrongQs() }]
+        : [],
+      notes: notes.length
+        ? notes
+        : Array.from(article.querySelectorAll('h2, h3')).map((h) => (h.textContent || '').trim()).filter(Boolean).slice(0, 30),
+      onGrade: hostGrade,
+      onFinish: (): void => { renderDocStats(); },
+      onClose: (): void => {
+        clearTheme();
+        const u = new URL(location.href);
+        u.searchParams.delete('theme');
+        location.replace(u.toString());
+      },
+    };
+    attachTheme(theme, title, host);
+    return;
+  }
 
   const btn = document.getElementById('start-quiz') as HTMLButtonElement | null;
   if (!pool.length) {
     if (btn) {
       btn.disabled = true;
-      btn.title = binding ? '本页无客观题，请在下方主题区探索' : '本页没有可自动判分的客观题';
-      btn.textContent = binding ? '请用主题探索' : '暂无可答题';
+      btn.title = '本页没有可自动判分的客观题';
+      btn.textContent = '暂无可答题';
     }
-    return;
-  }
-
-  if (binding?.standalone) {
-    btn?.addEventListener('click', () => binding.launch(pool));
     return;
   }
 
@@ -305,7 +296,6 @@ export function initQuiz(): void {
     questions: pool,
     title,
     instant: getSettings().instant,
-    pace: binding?.pace,
     note: `数据保存在本机浏览器（${storageMode()}），不会上传。可在「错题本」里复习。`,
     setupActions: [
       ...(canResume
@@ -331,12 +321,9 @@ export function initQuiz(): void {
         ? [{ id: 'redo-wrong', label: `只练本卷错题（${wrongHere}）`, run: (): void => { doc.classList.add('quiz-active'); player.start(wrongQs(), true); } }]
         : []),
     ],
-    onGrade: (q, pick, ok): void => {
-      hostGrade(q, pick, ok);
-      binding?.onGrade(q, pick, ok);
-    },
+    onGrade: hostGrade,
     onStateChange: hostState,
-    onFinish: (r): void => binding?.onFinish(r),
+    onFinish: (): void => renderDocStats(),
     onClose: hostClose,
   });
 

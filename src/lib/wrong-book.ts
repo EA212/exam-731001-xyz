@@ -1,10 +1,3 @@
-/**
- * 错题本
- * ----------------------------------------------------------------
- * 数据来源：exam-store 里保存的错题快照（题干 / 选项 / 正确答案 / 我的答案 / 解析 / 出处）
- * 功能：按试卷分组浏览、按科目 / 试卷筛选、搜索、
- *       重做错题（答对可直接移出）、标记已掌握、移出、清空、导出 / 导入 JSON
- */
 import {
   type WrongRecord,
   clearWrong,
@@ -17,7 +10,7 @@ import {
   KEY_WRONG,
 } from './exam-store';
 import { createQuizPlayer, type QuizQuestion, type QuizPlayer } from './quiz-player';
-import { attachTheme, currentTheme, type ThemeBinding, type ThemeSource } from '../themes';
+import { attachTheme, currentTheme, clearTheme, type ThemeBinding } from '../themes';
 
 type Filter = 'pending' | 'mastered' | 'all';
 
@@ -41,7 +34,6 @@ export function initWrongBook(): void {
     kw: '',
   };
 
-  /* ------------------------------ 顶部统计 ------------------------------ */
   function renderStats(): void {
     const s = getStats();
     const acc = s.answered ? Math.round((s.correct / s.answered) * 100) : 0;
@@ -55,7 +47,6 @@ export function initWrongBook(): void {
       <div class="wb-stat"><b>${s.docs}</b><span>涉及试卷</span></div>`;
   }
 
-  /* ------------------------------ 列表 ------------------------------ */
   function visible(): WrongRecord[] {
     const all = Object.values(getWrongMap());
     return all
@@ -154,7 +145,6 @@ export function initWrongBook(): void {
   const chip = (v: Filter, label: string, cur: Filter): string =>
     `<button class="quiz-chip ${cur === v ? 'on' : ''}" data-v="${v}" type="button">${label}</button>`;
 
-  /* ------------------------------ 重做 ------------------------------ */
   let redoPlayer: QuizPlayer | null = null;
   let redoTheme: ThemeBinding | null = null;
 
@@ -173,23 +163,18 @@ export function initWrongBook(): void {
       point: w.point,
       source: w.docTitle,
     }));
-    const sources: ThemeSource[] = questions.map((q) => ({
-      id: q.id,
-      label: `第 ${q.num} 题`,
-      detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : '', q.analysis].filter(Boolean).join('\n').slice(0, 200),
-      gradable: true,
-    }));
     redoTheme?.destroy();
-    redoTheme = attachTheme(currentTheme(), '错题重做', sources, panel, {
-      questions,
-      onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
-      onStateChange: (): void => undefined,
-      onFinish: (): void => { renderList(); renderStats(); },
-      onClose: (): void => { renderList(); renderStats(); },
-    });
-    if (redoTheme?.standalone) {
-      redoTheme.launch(questions);
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    redoTheme = null;
+    const theme = currentTheme();
+    if (theme) {
+      redoTheme = attachTheme(theme, '错题重做', {
+        questions,
+        chapters: [],
+        variants: [],
+        onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
+        onFinish: (): void => { renderList(); renderStats(); },
+        onClose: (): void => { clearTheme(); renderList(); renderStats(); },
+      });
       return;
     }
     if (!redoPlayer) {
@@ -198,10 +183,9 @@ export function initWrongBook(): void {
         questions,
         title: '错题重做',
         settings: false,
-        pace: redoTheme?.pace,
         wrongBookUrl: '/zsb/wrong/',
-        onGrade: (q, pick, ok): void => { if (ok) markWrongMastered(q.id, true); redoTheme?.onGrade(q, pick, ok); },
-        onFinish: (r): void => redoTheme?.onFinish(r),
+        onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
+        onFinish: (): void => { renderList(); renderStats(); },
         onClose: (): void => { renderList(); renderStats(); },
       });
     }
@@ -209,7 +193,6 @@ export function initWrongBook(): void {
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /* ------------------------------ 事件 ------------------------------ */
   function bindStatic(): void {
     document.addEventListener('click', (ev) => {
       const t = ev.target as HTMLElement;

@@ -1,12 +1,10 @@
-import type { QuizQuestion, QuizResult, QuizSnapshot } from '../lib/quiz-player';
-import { mindTree } from './mind-tree';
-import { arcade } from './arcade';
+import type { QuizQuestion } from '../lib/quiz-player';
+import { catchTheme } from './catch';
 
-export interface ThemeSource {
-  id: string;
+export interface ThemeChapter {
   label: string;
-  detail: string;
-  gradable: boolean;
+  href: string;
+  meta: string;
 }
 
 export interface ThemeVariant {
@@ -17,26 +15,19 @@ export interface ThemeVariant {
 
 export interface ThemeHost {
   questions: QuizQuestion[];
-  variants?: ThemeVariant[];
-  onLaunch?(): void;
+  chapters: ThemeChapter[];
+  variants: ThemeVariant[];
+  notes?: string[];
+  load?(href: string): Promise<QuizQuestion[]>;
   onGrade(q: QuizQuestion, pick: string, correct: boolean): void;
-  onStateChange(s: QuizSnapshot): void;
-  onFinish(r: QuizResult): void;
+  onFinish(correct: number, total: number): void;
   onClose(): void;
 }
 
 export interface ThemeContext {
   mount: HTMLElement;
   title: string;
-  sources: ThemeSource[];
-  host?: ThemeHost;
-}
-
-export interface ThemeInstance {
-  onGrade?(q: QuizQuestion, pick: string, correct: boolean): void;
-  onFinish?(r: QuizResult): void;
-  launch?(questions: QuizQuestion[]): void;
-  destroy?(): void;
+  host: ThemeHost;
 }
 
 export interface QuizTheme {
@@ -44,26 +35,26 @@ export interface QuizTheme {
   name: string;
   tagline: string;
   accent: string;
-  pace: { right: number; wrong: number };
-  standalone?: boolean;
-  create(ctx: ThemeContext): ThemeInstance;
+  create(ctx: ThemeContext): () => void;
 }
 
 export interface ThemeBinding {
-  pace: { right: number; wrong: number };
-  standalone: boolean;
-  launch(questions: QuizQuestion[]): void;
-  onGrade(q: QuizQuestion, pick: string, correct: boolean): void;
-  onFinish(r: QuizResult): void;
   destroy(): void;
 }
 
-export const themes: QuizTheme[] = [mindTree, arcade];
+export const themes: QuizTheme[] = [catchTheme];
+
+const LOCK_ID = 'zsb-theme-lock';
+const LOCK_CSS = `html.theme-lock,html.theme-lock body{height:100%;overflow:hidden;overscroll-behavior:none;background:#05070f}
+html.theme-lock body>:not(.theme-root){display:none!important}
+.theme-root{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;overflow:hidden;touch-action:none;background:#05070f;color:#eaf0ff}`;
 
 const KEY = 'zsb.theme.v1';
+
 const read = (): string | null => {
   try { return sessionStorage.getItem(KEY); } catch { return null; }
 };
+
 const write = (v: string | null): void => {
   try { v === null ? sessionStorage.removeItem(KEY) : sessionStorage.setItem(KEY, v); } catch { return; }
 };
@@ -75,26 +66,40 @@ export function currentTheme(): QuizTheme | null {
   return themes.find((t) => t.id === id) ?? null;
 }
 
-export function attachTheme(
-  theme: QuizTheme | null,
-  title: string,
-  sources: ThemeSource[],
-  anchor: Element,
-  host?: ThemeHost,
-): ThemeBinding | null {
-  document.querySelector('.theme-stage')?.remove();
-  if (!theme) return null;
+export function clearTheme(): void {
+  write(null);
+}
+
+export function attachTheme(theme: QuizTheme, title: string, host: ThemeHost): ThemeBinding {
+  document.querySelector('.theme-root')?.remove();
+  let lock = document.getElementById(LOCK_ID) as HTMLStyleElement | null;
+  if (!lock) {
+    lock = document.createElement('style');
+    lock.id = LOCK_ID;
+    lock.textContent = LOCK_CSS;
+    document.head.appendChild(lock);
+  }
   const mount = document.createElement('div');
-  mount.className = 'theme-stage';
-  if (theme.standalone) mount.classList.add('is-standalone');
-  anchor.insertAdjacentElement('afterend', mount);
-  const inst = theme.create({ mount, title, sources, host });
-  return {
-    pace: theme.pace,
-    standalone: !!theme.standalone,
-    launch: (qs): void => inst.launch?.(qs),
-    onGrade: (q, pick, ok): void => { if (!theme.standalone) inst.onGrade?.(q, pick, ok); },
-    onFinish: (r): void => { if (!theme.standalone) inst.onFinish?.(r); },
-    destroy: (): void => { inst.destroy?.(); mount.remove(); },
+  mount.className = 'theme-root';
+  document.body.appendChild(mount);
+  document.documentElement.classList.add('theme-lock');
+  window.scrollTo(0, 0);
+  let alive = true;
+  let dispose: () => void = () => undefined;
+  const binding: ThemeBinding = {
+    destroy(): void {
+      if (!alive) return;
+      alive = false;
+      dispose();
+      mount.remove();
+      document.documentElement.classList.remove('theme-lock');
+      lock?.remove();
+    },
   };
+  dispose = theme.create({
+    mount,
+    title,
+    host: { ...host, onClose: (): void => { binding.destroy(); host.onClose(); } },
+  });
+  return binding;
 }

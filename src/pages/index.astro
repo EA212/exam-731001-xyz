@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { themes } from '../themes';
+
+export const prerender = true;
 ---
 
 <Layout title="首页">
@@ -14,18 +16,16 @@ import { themes } from '../themes';
 
     <section class="home-themes">
       <h2>答题主题</h2>
-      <p class="home-themes-lead">主题是叠加在答题之上的独立一层，可随时切换；不同主题有不同的节奏、画面与奖励。</p>
+      <p class="home-themes-lead">主题是独立的一层，进入后是全屏的游戏世界；标准模式保持原本的答题节奏，随时切换。</p>
       <div class="home-theme-grid">
-        {themes.map((t, i) => (
+        {themes.map((t) => (
           <a class="home-theme" href={`/zsb/?theme=${t.id}`} style={`--accent:${t.accent}`}>
-            <span class="home-theme-key">{String.fromCharCode(65 + i)}</span>
             <b>{t.name}</b>
             <small>{t.tagline}</small>
             <span class="home-theme-go">进入 →</span>
           </a>
         ))}
         <a class="home-theme is-base" href="/zsb/?theme=none">
-          <span class="home-theme-key">0</span>
           <b>标准模式</b>
           <small>不叠加主题，保持原本的答题节奏</small>
           <span class="home-theme-go">进入 →</span>

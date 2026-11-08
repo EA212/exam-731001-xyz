@@ -354,8 +354,6 @@ export function createQuizPlayer(cfg: QuizConfig): QuizPlayer {
     const done = !!graded[q.id];
     const multi = q.type === 'duoxuan';
     const isLast = idx === order.length - 1;
-    const answered = order.filter((x) => graded[x.id]);
-    const right = answered.filter((x) => isCorrect(x, chosen[x.id] || '')).length;
     return `${headerHtml()}
       <div class="quiz-play">
         <div class="quiz-card">

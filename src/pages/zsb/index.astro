@@ -8,11 +8,9 @@ export const prerender = true;
 
 const all = (await getCollection('zsb')).filter((e) => !e.data.draft);
 
-// 每份资料可自动判分的客观题数量
 const gradableOf = (body: string | undefined) => countObjectiveQuestions(body ?? '');
 const questionTotal = all.reduce((s, e) => s + gradableOf(e.body), 0);
 
-// 排序：科目 → 年份倒序 → 标题
 const entries = [...all].sort((a, b) => {
   if (a.data.subjectKey !== b.data.subjectKey)
     return a.data.subjectKey === 'mingfa' ? -1 : 1;
@@ -154,20 +152,11 @@ const grouped = subjectKeys
   <script>
     import { getProgressMap, getSeenMap, getStats } from '../../lib/exam-store';
     import { currentTheme } from '../../themes';
+    import { openThemeIndex } from '../../lib/theme-host';
 
     const theme = currentTheme();
-    if (theme) {
-      const bar = document.createElement('div');
-      bar.className = 'theme-bar';
-      bar.style.setProperty('--accent', theme.accent);
-      bar.innerHTML = `<b>◇ ${theme.name}</b><span>${theme.tagline}</span><a href="/zsb/?theme=none">退出主题</a>`;
-      document.querySelector('.zsb-hero')?.after(bar);
-      document.querySelectorAll<HTMLAnchorElement>('.zsb-card').forEach((a) => {
-        a.href = `${a.getAttribute('href')}?theme=${encodeURIComponent(theme.id)}`;
-      });
-    }
+    if (theme) openThemeIndex(theme);
 
-    /* ------------------ 刷题总览 ------------------ */
     const stats = getStats();
     const acc = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0;
     const set = (id: string, v: string) => {
@@ -178,7 +167,6 @@ const grouped = subjectKeys
     set('ov-acc', `${acc}%`);
     set('ov-wrong', String(stats.pending));
 
-    /* ------------------ 卡片上的进度 ------------------ */
     const prog = getProgressMap();
     const seen = getSeenMap();
     document.querySelectorAll<HTMLElement>('[data-progress-for]').forEach((el) => {
@@ -194,7 +182,6 @@ const grouped = subjectKeys
         : `已刷 ${done} 题 · 对 ${correct}`;
     });
 
-    /* ------------------ 筛选 ------------------ */
     const state: Record<string, string> = {
       subject: 'all',
       category: 'all',
