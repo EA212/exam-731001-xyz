@@ -173,14 +173,24 @@ export function initWrongBook(): void {
       point: w.point,
       source: w.docTitle,
     }));
-    if (!redoTheme) {
-      const sources: ThemeSource[] = questions.map((q) => ({
-        id: q.id,
-        label: `第 ${q.num} 题`,
-        detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : ''].filter(Boolean).join('\n'),
-        gradable: true,
-      }));
-      redoTheme = attachTheme(currentTheme(), '错题重做', sources, panel);
+    const sources: ThemeSource[] = questions.map((q) => ({
+      id: q.id,
+      label: `第 ${q.num} 题`,
+      detail: [q.stem.split('\n')[0], q.answer ? `答案 ${q.answer}` : '', q.analysis].filter(Boolean).join('\n').slice(0, 200),
+      gradable: true,
+    }));
+    redoTheme?.destroy();
+    redoTheme = attachTheme(currentTheme(), '错题重做', sources, panel, {
+      questions,
+      onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
+      onStateChange: (): void => undefined,
+      onFinish: (): void => { renderList(); renderStats(); },
+      onClose: (): void => { renderList(); renderStats(); },
+    });
+    if (redoTheme?.standalone) {
+      redoTheme.launch(questions);
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
     }
     if (!redoPlayer) {
       redoPlayer = createQuizPlayer({

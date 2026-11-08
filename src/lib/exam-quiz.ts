@@ -1,8 +1,6 @@
 import {
-  type DocProgress,
   type QuizOption,
   type QuizType,
-  type SessionState,
   getSession,
   getSettings,
   getSeenMap,
@@ -21,7 +19,7 @@ import {
   isCorrect,
 } from './quiz-player';
 import { normalizeObjectiveAnswer } from './taxonomy';
-import { attachTheme, currentTheme, type ThemeSource } from '../themes';
+import { attachTheme, currentTheme, type ThemeHost, type ThemeSource } from '../themes';
 
 export type ParsedQ = QuizQuestion & { rawAnswer: string };
 
@@ -198,15 +196,97 @@ export function initQuiz(): void {
         detail: (h.nextElementSibling?.textContent || '').trim().slice(0, 200),
         gradable: false,
       }));
-  const binding = attachTheme(currentTheme(), title, sources, article);
+  const wrongQs = (): QuizQuestion[] =>
+    Object.values(getWrongMap())
+      .filter((w) => w.docId === ctx.docId && !w.mastered)
+      .map((w) => byId.get(w.id))
+      .filter((q): q is QuizQuestion => !!q);
+
+  function hostGrade(q: QuizQuestion, pick: string, ok: boolean): void {
+    markSeen(q.id, ctx.docId, ok);
+    if (!ok) {
+      saveWrong({
+        id: q.id,
+        docId: ctx.docId,
+        docTitle: ctx.docTitle,
+        docUrl: ctx.docUrl,
+        subject: ctx.subject,
+        type: q.type,
+        typeName: q.typeName,
+        num: q.num,
+        stem: q.stem,
+        options: q.options,
+        answer: q.answer,
+        chosen: pick,
+        analysis: q.analysis,
+        point: q.point,
+      });
+    }
+    renderDocStats();
+  }
+
+  function hostState(snap: QuizSnapshot): void {
+    const order = snap.ids.map((id) => byId.get(id)).filter((q): q is QuizQuestion => !!q);
+    const answered = order.filter((q) => snap.graded[q.id]);
+    const correct = answered.filter((q) => isCorrect(q, snap.chosen[q.id] || ''));
+    const score = correct.reduce((n, q) => n + q.point, 0);
+    const full = order.reduce((n, q) => n + q.point, 0);
+    saveDocProgress({
+      docId: ctx.docId,
+      docTitle: ctx.docTitle,
+      docUrl: ctx.docUrl,
+      total: order.length,
+      answered: answered.length,
+      correct: correct.length,
+      wrong: answered.length - correct.length,
+      score: Math.round(score * 10) / 10,
+      fullScore: Math.round(full * 10) / 10,
+      lastAt: Date.now(),
+      finished: snap.finished,
+    });
+    saveSession({
+      docId: ctx.docId,
+      ids: snap.ids,
+      index: snap.index,
+      chosen: snap.chosen,
+      graded: snap.graded,
+      startedAt: 0,
+      elapsed: snap.elapsed,
+      finished: snap.finished,
+    });
+  }
+
+  function hostClose(): void {
+    doc!.classList.remove('quiz-active');
+    renderDocStats();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const themeHost: ThemeHost = {
+    questions: pool,
+    variants: wrongQs().length
+      ? [{ id: 'wrong', label: `只练本卷错题（${wrongQs().length}）`, questions: wrongQs() }]
+      : [],
+    onLaunch: (): void => doc!.classList.add('quiz-active'),
+    onGrade: hostGrade,
+    onStateChange: hostState,
+    onFinish: (): void => renderDocStats(),
+    onClose: hostClose,
+  };
+  const binding = attachTheme(currentTheme(), title, sources, article, themeHost);
 
   const btn = document.getElementById('start-quiz') as HTMLButtonElement | null;
   if (!pool.length) {
     if (btn) {
       btn.disabled = true;
-      btn.title = binding ? '本页无客观题，请在下方知识树里展开知识点' : '本页没有可自动判分的客观题';
-      btn.textContent = binding ? '请用知识树探索' : '暂无可答题';
+      btn.title = binding ? '本页无客观题，请在下方主题区探索' : '本页没有可自动判分的客观题';
+      btn.textContent = binding ? '请用主题探索' : '暂无可答题';
     }
+    return;
+  }
+
+  if (binding?.standalone) {
+    btn?.addEventListener('click', () => binding.launch(pool));
     return;
   }
 
@@ -217,11 +297,6 @@ export function initQuiz(): void {
 
   const s = getSession(ctx.docId);
   const canResume = !!s && !s.finished && !!s.ids?.length;
-  const wrongQs = (): QuizQuestion[] =>
-    Object.values(getWrongMap())
-      .filter((w) => w.docId === ctx.docId && !w.mastered)
-      .map((w) => byId.get(w.id))
-      .filter((q): q is QuizQuestion => !!q);
   const wrongHere = wrongQs().length;
 
   let player: QuizPlayer;
@@ -257,66 +332,12 @@ export function initQuiz(): void {
         : []),
     ],
     onGrade: (q, pick, ok): void => {
-      markSeen(q.id, ctx.docId, ok);
-      if (!ok) {
-        saveWrong({
-          id: q.id,
-          docId: ctx.docId,
-          docTitle: ctx.docTitle,
-          docUrl: ctx.docUrl,
-          subject: ctx.subject,
-          type: q.type,
-          typeName: q.typeName,
-          num: q.num,
-          stem: q.stem,
-          options: q.options,
-          answer: q.answer,
-          chosen: pick,
-          analysis: q.analysis,
-          point: q.point,
-        });
-      }
-      renderDocStats();
+      hostGrade(q, pick, ok);
       binding?.onGrade(q, pick, ok);
     },
-    onStateChange: (snap): void => {
-      const order = snap.ids.map((id) => byId.get(id)).filter((q): q is QuizQuestion => !!q);
-      const answered = order.filter((q) => snap.graded[q.id]);
-      const correct = answered.filter((q) => isCorrect(q, snap.chosen[q.id] || ''));
-      const score = correct.reduce((n, q) => n + q.point, 0);
-      const full = order.reduce((n, q) => n + q.point, 0);
-      const prog: DocProgress = {
-        docId: ctx.docId,
-        docTitle: ctx.docTitle,
-        docUrl: ctx.docUrl,
-        total: order.length,
-        answered: answered.length,
-        correct: correct.length,
-        wrong: answered.length - correct.length,
-        score: Math.round(score * 10) / 10,
-        fullScore: Math.round(full * 10) / 10,
-        lastAt: Date.now(),
-        finished: snap.finished,
-      };
-      saveDocProgress(prog);
-      const session: SessionState = {
-        docId: ctx.docId,
-        ids: snap.ids,
-        index: snap.index,
-        chosen: snap.chosen,
-        graded: snap.graded,
-        startedAt: 0,
-        elapsed: snap.elapsed,
-        finished: snap.finished,
-      };
-      saveSession(session);
-    },
+    onStateChange: hostState,
     onFinish: (r): void => binding?.onFinish(r),
-    onClose: (): void => {
-      doc.classList.remove('quiz-active');
-      renderDocStats();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
+    onClose: hostClose,
   });
 
   btn?.addEventListener('click', () => {
