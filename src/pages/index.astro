@@ -16,7 +16,7 @@ export const prerender = true;
 
     <section class="home-themes">
       <h2>答题主题</h2>
-      <p class="home-themes-lead">主题是独立的一层，进入后是全屏的游戏世界；标准模式保持原本的答题节奏，随时切换。</p>
+      <p class="home-themes-lead">主题是独立的一层，进入后是全屏的游戏世界，题目、答案与主观题记忆卷轴都来自资料库；标准模式保持原本的答题节奏，随时切换。</p>
       <div class="home-theme-grid">
         {themes.map((t) => (
           <a class="home-theme" href={`/zsb/?theme=${t.id}`} style={`--accent:${t.accent}`}>

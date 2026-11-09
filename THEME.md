@@ -1,125 +1,125 @@
 # 答题主题层设计说明
 
-本文档描述「答题主题」这一层的构想与契约，供后续 AI / 开发者在此基础上新增主题时参照。阅读完第 3、4、6 节即可动手，不需要改动站点现有代码。
+本文描述「答题主题」这一层的契约与接线，供后续 AI / 开发者新增主题时参照。读第 3、4、6 节即可动手，不必改动站点现有代码。玩法与闭环的完整设计见 `DESIGN-QUEST.md`。
 
 ## 1. 定位与边界
 
-主题不是 A/B 实验，也不是标准答题界面的皮肤，而是**独立于站点的一层全屏世界**。
+主题不是 A/B 实验，也不是标准答题界面的皮肤，而是**独立于站点、可整包迁移的一层全屏游戏世界**。
 
 | 要求 | 说明 |
 | --- | --- |
-| 完全沉浸 | 进入主题后不出现站点 header、面包屑（首页 / 斜杠）、首页内容、旧答题组件。屏幕上只有主题自己的画面。 |
-| 手机优先 | 竖屏布局、手指拖动 / 点按操作，不依赖键盘，不做桌面端专用操控。 |
-| 彻底解耦 | 标准模式的页面、组件、存储逻辑零改动；主题只通过契约拿题目、回写结果。删掉整个 `src/themes/` 目录，标准模式照常工作。 |
-| 平级扩展 | 所有主题是注册表里平级的一项，没有分组、没有实验对照。首页自动列出注册表中的主题。 |
-| 后端复用 | 题目解析、判分、错题本、进度存储沿用站点既有实现，主题不自己造一套数据层。 |
+| 完全沉浸 | 进入后不出现站点 header、面包屑、首页内容、旧答题组件；只有主题自己的画面。 |
+| 手机优先 | 竖屏布局、手指点按 / 轻扫，不依赖键盘。 |
+| 样式独立 | 主题自带唯一样式表，注入 Shadow DOM；不引用 `site.css`、不引用 `--c-*`、不改站点样式。 |
+| 整包迁移 | 复制一个主题目录 + 装 `phaser` / `howler` 即可在别的项目跑通，双向不污染。 |
+| 彻底解耦 | 标准模式页面 / 组件 / 存储零改动；删掉整个 `src/themes/`，标准模式照常工作。 |
+| 平级扩展 | 主题是注册表里平级的一项，首页自动列出。 |
 
 ## 2. 分层
 
 ```
-站点页面（首页 / 列表页 / 详情页 / 错题本）
-        │  仅判断「当前是否有主题」
+src/content/专升本/**/*.md（题源，Markdown）
+        │ remark-exam.mjs → <article> > section.exam-q
         ▼
-宿主适配层（theme-host.ts / exam-quiz.ts / wrong-book.ts）
-        │  组装 ThemeHost：题目、关卡、持久化回调
+宿主接线（theme-host.ts / exam-quiz.ts / wrong-book.ts）
+        │  解析成 QuestQuestion[]（客观 + 主观），挂 3 个回调
         ▼
-主题契约（themes/index.ts）  ← 唯一的接缝
-        │  attachTheme() 挂载全屏容器并加锁
+主题契约（themes/index.ts）  ← 唯一接缝：注册表 / 状态 / 沉浸锁 / 挂载销毁
+        │  create(hostEl, ctx) → dispose
         ▼
-主题实现（themes/catch/*）  ← 每个主题自成一个目录
+src/themes/quest/  ← 唯一可迁移单元，自带一切
+   types.ts     自带全部类型，不 import 任何 lib
+   parse.ts     MD 渲染态 → 结构化题目（题干/选项/答案/主观答案全文/解析）
+   model.ts     地图节点、判分、稀有度、奖励、结算（纯函数）
+   engine.ts    Phaser 轮盘答题器 + 宝箱掉落/开箱（只认数据）
+   audio.ts     运行时合成 WAV + Howler，零音频文件
+   view.ts      HUD / 菜单 / 地图 / 卷轴 / 结算 DOM
+   tokens.css   唯一样式表，注入 shadowRoot
+   index.ts     状态机把各层串成完整闭环
 ```
 
-| 文件 | 职责 |
-| --- | --- |
-| `src/themes/index.ts` | 契约、注册表、主题状态、沉浸锁、挂载与销毁 |
-| `src/lib/theme-host.ts` | 列表页 → 主题：把资料卡片变成关卡，按 URL 抓取并解析题目 |
-| `src/lib/exam-quiz.ts` | 详情页 → 主题：有主题时直接进游戏，否则走原有 `createQuizPlayer()` |
-| `src/lib/wrong-book.ts` | 错题重做 → 主题：有主题时进游戏，否则走原有组件 |
-| `src/pages/index.astro` | 遍历注册表渲染主题入口卡片 |
-| `src/pages/zsb/index.astro` | 列表页只有一行主题判断，其余全是原有逻辑 |
-| `src/themes/catch/` | 当前主题「光舱接星」的全部实现 |
-| `.research/` | 本地参考的开源游戏案例，已在 `.gitignore` 排除 |
+依赖单向：`index → view/engine/audio → model/parse → types`。禁止主题包出现 `../../lib/*`、`site.css`、`--c-*`。
 
 ## 3. 契约（唯一接缝）
 
 ```ts
-export interface QuizTheme {
-  id: string;
-  name: string;
-  tagline: string;
-  accent: string;
-  create(ctx: ThemeContext): () => void;   // 返回 dispose，用于清理
+interface QuestQuestion {
+  id: string; num: string; typeName: string;
+  type: 'danxuan' | 'duoxuan' | 'panduan' | 'other';
+  kind: 'choice' | 'scroll';   // choice 进轮盘判分；scroll 是主观题记忆卷轴
+  stem: string; material: string;
+  options: { label: string; text: string }[];
+  answer: string;              // choice: 'B' / 'ABD' / '对'；scroll: ''
+  answerText: string;          // 主观题参考答案全文
+  analysis: string; keyPoints: string; point: number;
 }
 
-export interface ThemeContext {
-  mount: HTMLElement;   // 全屏 .theme-root，主题只在这里渲染
-  title: string;
-  host: ThemeHost;
-}
-
-export interface ThemeHost {
-  questions: QuizQuestion[];      // 可直接开玩的题目
-  chapters: ThemeChapter[];       // 可选关卡列表，替代 questions 作为入口
-  variants: ThemeVariant[];       // 可选题库变体，如「只练错题」
-  notes?: string[];               // 非选择题材料，作为知识点奖励
-  load?(href: string): Promise<QuizQuestion[]>;  // 切换关卡时取题
-  onGrade(q, pick, correct): void;   // 必须回写：markSeen / saveWrong
+interface QuestHost {
+  questions: QuestQuestion[];
+  chapters: { label: string; href: string; meta: string }[];
+  variants: { id: string; label: string; questions: QuestQuestion[] }[];
+  load?(href: string): Promise<QuestQuestion[]>;
+  onGrade(q, pick, correct): void;   // 必须回写 markSeen / saveWrong
   onFinish(correct, total): void;
-  onClose(): void;                   // 必须 clearTheme() 并回到标准模式
+  onClose(): void;                   // 必须 clearTheme() 回标准模式
 }
 
+interface QuizTheme {
+  id: string; name: string; tagline: string; accent: string;
+  create(ctx: { mount: HTMLElement; title: string; host: QuestHost }): () => void;
+}
+
+export const themes: QuizTheme[];
 export function currentTheme(): QuizTheme | null;
 export function clearTheme(): void;
-export function attachTheme(theme, title, host): ThemeBinding;  // Binding 只有 destroy()
-export const themes: QuizTheme[];
+export function attachTheme(theme, title, host): { destroy(): void };
+export function parseArticle(article: Element, docId?: string): QuestQuestion[];
 ```
 
-**主题状态**：URL 的 `?theme=<id>` 优先，`?theme=none` 表示退出；否则读 `sessionStorage["zsb.theme.v1"]`。刷新页面仍留在主题世界，显式退出才清除。
+- 主题自带类型，宿主用 duck typing 对接，不 import 站点 `QuizQuestion`。
+- `parseArticle` 是主题包自带的纯函数，宿主复用它把 MD 渲染态解析成题目（**含主观题答案全文**），无需自己造解析器。
+- 判分 `isCorrect` 也是主题包自带纯函数，结果先算、动画后播。
 
-**沉浸锁**：`attachTheme()` 在挂载任何异步资源之前，先同步注入一段 `<style>`，给 `<html>` 加 `theme-lock`：
+**主题状态**：URL `?theme=<id>` 优先，`?theme=none` 退出；否则读 `sessionStorage["zsb.theme.v1"]`。
 
-```
-html.theme-lock body > :not(.theme-root) { display: none !important; }
-.theme-root { position: fixed; inset: 0; ... background: #05070f; }
-```
+**沉浸锁**：`attachTheme()` 同步注入一段 `<style>` 给 `<html>` 加 `theme-lock`（`body > :not(.theme-root) { display:none }`），第一帧起站点 header / 面包屑 / 首页就不可见，主题 CSS 异步到达前已有深色底。`host.onClose` 被包装：先 `destroy()` 再执行宿主清理。
 
-这样站点的 header / 面包屑 / 首页从第一帧起就不可见，且主题 CSS 异步到达前已有深色底，不会白屏闪烁。`host.onClose` 被 `attachTheme` 包装：先 `destroy()` 移除容器与锁，再执行宿主的清理回调。
-
-**关键约束**：主题不需要、也不应该知道页面 URL、localStorage、错题本结构、Astro 页面 ID。一切数据走 `host`。
+**Shadow DOM**：`create()` 里 `mount.attachShadow({mode:'open'})`，`tokens.css` 注入 shadowRoot（含完整 reset + 全套 `--q-*` token）。外部 `* { color:red !important }` 进不来，主题样式也出不去。契约层的锁屏样式用 `background-color`（非 `background` 简写）以免覆盖主题渐变。
 
 ## 4. 宿主接线（已就位，新增主题无需改动）
 
 | 入口 | 行为 |
 | --- | --- |
-| 首页卡片 | `/zsb/?theme=<id>` → 列表页 `currentTheme()` 命中 → `openThemeIndex(theme)` 展示关卡 |
-| 列表页 | `chapters` 取自 `.zsb-card`，`load(href)` 用 `fetch` + `DOMParser` 复用 `parseQuestions()` |
-| 详情页 | `initQuiz()` 命中主题时构造 host 并 `attachTheme()` 后 `return`，不创建标准答题组件 |
-| 错题本 | `startRedo()` 命中主题时用错题组 `questions` 进游戏；否则用 `createQuizPlayer()` |
+| 首页卡片 | `/zsb/?theme=<id>` → 列表页命中 `currentTheme()` → `openThemeIndex(theme)` |
+| 列表页 | `chapters` 取自 `.zsb-card`，`load(href)` 用 `fetch` + `DOMParser` + `parseArticle()` |
+| 详情页 | `initQuiz()` 命中主题时构造 host 并 `attachTheme()` 后 `return`，不创建标准组件 |
+| 错题本 | `startRedo()` 命中主题时用错题组进游戏，否则 `createQuizPlayer()` |
 
-`onGrade` 统一做 `markSeen(q.id, docId, correct)` 与 `saveWrong(...)`，因此主题里的每一次作答都会进错题本和进度统计，跟标准模式完全一致。
+`onGrade` 统一做 `markSeen` 与 `saveWrong`，主题里的每次作答都进错题本和进度统计。主观题「记住了」按 `onGrade(q,'',true)` 记为通过，不写错题本。
 
-## 5. 当前主题：光舱接星（catch）
+## 5. 当前主题：秘境寻宝（quest）
 
-**玩法**：题干固定在上方，选项变成从顶部坠落的星体；手指左右拖动底部「光舱」去接正确答案。单选接一颗，多选要接齐所有正确项；接到干扰项或漏接掉一格生命，连击提高得分，宝箱星体掉落时给出一条知识点。生命耗尽或题目答完进入结算。
+**闭环**：`进入 → 菜单/地图 → 轮盘答题 → 判分 → 答对掉宝箱→开箱奖励→点亮节点→下一题 / 答错掉生命→错题回流 → 题尽或生命耗尽 → 星级结算 → 再来/换关/退出`。
 
-**为何这样设计**：借鉴了开源接物类小游戏（下落物体 + overlap 接取 + `Phaser.Scale.FIT` 适配）与触屏滑行游戏（`pointermove` 驱动 + DOM HUD 与游戏画布分离），把「点击选项」彻底换成「物理接取」，因此界面里没有任何旧答题表单元素，也不需要键盘。
+题目出来，选项铺在轮盘扇区上，点选正确扇区即答对，宝箱随后掉落、点击开箱得奖励（星币 / 钥匙 / 生命 / 双倍分 / 图鉴碎片 / 知识点）。主观题（简答 / 论述 / 材料分析 / 辨析 / 背诵笔记）走「记忆卷轴」：先默写 → 翻开答案全文 → 自评记住，同样通关并收进图鉴。详细玩法、状态机与音效分层见 `DESIGN-QUEST.md` §8–§13。
 
 | 模块 | 职责 |
 | --- | --- |
-| `catch.ts` | 状态机：菜单 / 关卡 / 暂停 / 结算、题目推进、计分连击、事件委托、触摸坐标映射 |
-| `catch/engine.ts` | Phaser 3 场景：星空背景、光舱、坠落星体、接取判定、粒子与镜头反馈；只暴露 `drop / moveTo / pause / destroy` |
-| `catch/audio.ts` | 浏览器内合成 WAV 音效（Howler.js），不依赖外部音频文件 |
-| `catch/style.css` | 全屏视觉，全部限定在 `.theme-root` 作用域内，不污染站点样式 |
+| `index.ts` | 状态机：菜单 / 地图 / 答题 / 判分 / 开箱 / 结算 / 退出，事件委托 |
+| `parse.ts` | MD → 题目（客观 + 主观全文），判分纯函数 |
+| `model.ts` | 节点生成、稀有度、奖励表、星级（纯函数） |
+| `engine.ts` | Phaser：轮盘绘制与旋转、宝箱掉落与开箱、粒子与相机；只暴露 `wheel / chest / pause / destroy` |
+| `audio.ts` | 合成 WAV，固定答对音 + 稀有度分档揭晓音 + 转盘 tick |
+| `view.ts` | Shadow DOM 下的 HUD / 菜单 / 地图 / 题干 / 卷轴 / 结算卡片 |
+| `tokens.css` | 唯一样式表，物理隔离 |
 
-三者都在 `create()` 里**动态 import**，标准模式不会下载 Phaser（约 1.5 MB）与 Howler。`Field.moveTo()` 接收 0~1 的归一化横坐标，主题不需要知道画布内部尺寸。
+`engine` / `tokens.css` 动态 import，标准模式不会下载 Phaser（约 1.5 MB）与 Howler。
 
 ## 6. 新增一个主题
 
-只需要三步，**不要改站点任何页面**：
-
-1. 新建 `src/themes/<id>/`，实现 `QuizTheme` 对象；`create(ctx)` 里渲染 `ctx.mount`，用 `ctx.host` 取题、判分回写。
-2. 在 `src/themes/index.ts` 的 `themes` 数组里注册该对象。
-3. 首页卡片、列表页关卡、详情页、错题本会自动出现新主题，无需其它接线。
+1. 新建 `src/themes/<id>/`，实现 `QuizTheme` 对象；`create(ctx)` 里 `attachShadow`、渲染 `ctx.mount`、用 `ctx.host` 取题判分。
+2. 在 `src/themes/index.ts` 的 `themes` 数组注册。
+3. 首页卡片 / 列表页关卡 / 详情页 / 错题本自动生效，无需其它接线。
 
 最小骨架：
 
@@ -127,41 +127,32 @@ html.theme-lock body > :not(.theme-root) { display: none !important; }
 import type { QuizTheme } from './index';
 
 export const myTheme: QuizTheme = {
-  id: 'my',
-  name: '主题名',
-  tagline: '一句话玩法',
-  accent: '#6c8cff',
+  id: 'my', name: '主题名', tagline: '一句话玩法', accent: '#6c8cff',
   create(ctx) {
-    const root = ctx.mount;
-    let style: HTMLStyleElement | null = null;
-    root.innerHTML = `<div class="my-hud"></div><div class="my-stage"></div>`;
-    const onClick = (e: MouseEvent) => {
+    const shadow = ctx.mount.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `<style>/* 自带 reset + 组件样式 */</style><main class="hud"></main>`;
+    const onClick = (e: Event) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
       if (b?.dataset.act === 'exit') ctx.host.onClose();
     };
-    root.addEventListener('click', onClick);
-    void import('./my/style.css?inline').then((css) => {
-      style = document.createElement('style');
-      style.textContent = css.default;
-      document.head.appendChild(style);
-    });
-    return () => { root.removeEventListener('click', onClick); style?.remove(); };
+    shadow.addEventListener('click', onClick);
+    return () => shadow.removeEventListener('click', onClick);
   },
 };
 ```
 
-接入题目时用 `ctx.host.questions` 或 `ctx.host.load?.(href)`；每答一题调用 `ctx.host.onGrade(q, pick, correct)`；结束调用 `ctx.host.onFinish(correct, total)`；退出调用 `ctx.host.onClose()`。
+每答一题调 `ctx.host.onGrade(q, pick, correct)`，结束调 `onFinish(correct, total)`，退出调 `onClose()`。
 
 ## 7. 编码约定
 
-- **零注释、命名简洁、单一职责**，代码本身说明意图；不写分节横幅注释。
-- 重资源（游戏引擎、音频、主题 CSS）一律动态导入，标准模式零负担。
-- 只用 pointer / touch，不引入键盘快捷键；不复用 `.quiz-*`、`.wb-*` 等旧答题 DOM。
-- 样式全部写在 `.theme-root` 作用域内；全局只由契约注入那一段锁屏样式。
-- `dispose()` 必须清理定时器、事件监听、canvas / Phaser 实例和注入的 `<style>`，保证反复进出不泄漏。
-- 主题代码不写站点业务判断；需要新能力时扩展 `ThemeHost`，而不是反过来读页面。
-- `.research/` 仅供本地参考，不入库、不上传。
+- **零注释、命名简洁、单一职责**；不写分节横幅注释。
+- 重资源（引擎、音频、样式）动态导入，标准模式零负担。
+- 只用 pointer / touch，不引入键盘；不复用 `.quiz-*` / `.wb-*` 旧答题 DOM。
+- 样式全部注入 shadowRoot；契约层只注入锁屏那一段（`background-color`，不留 `touch-action:none` 以免阻止关卡列表滚动）。
+- `dispose()` 清理定时器、监听、Phaser.Game、Howl 与注入的 `<style>`。
+- 主题代码不写站点业务判断；需要新能力时扩展 `QuestHost`。
+- `.research/` 仅供本地参考，不入库。
 
 ## 8. 验证口径
 
-手机视口（390×844）实测需覆盖：进入后 `html.theme-lock` 生效且 `body` 下非 `.theme-root` 元素全部不可见；关卡载入出题；触摸拖动无报错；游戏循环能推进题号与生命；暂停 / 静音 / 退出正常；退出后 header 恢复、标准答题与错题本功能不受影响；全程无 JS 异常。`npm run build` 需通过 `astro check`、`astro build` 与 `verify-legacy`。
+手机视口（390×844）实测：`astro check` 0 错误；`npm run build` + `verify-legacy` 全绿；`theme-lock` 生效且 `body` 下非 `.theme-root` 元素全部不可见；Shadow DOM 抗污染（宿主注入全局 `!important` 主题视觉不变）；客观题与主观题全部解析进游戏；轮盘答题→答对掉宝箱→开箱→推进；答错掉生命→生命耗尽→结算→再来一局；主观题卷轴答案全文；暂停 / 静音 / 退出；退出后 header 恢复、标准答题与错题本不受影响；零横向溢出、零 JS 异常。

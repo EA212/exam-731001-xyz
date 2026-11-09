@@ -7,3 +7,8 @@ declare module 'howler' {
   }
   export const Howler: { mute(muted: boolean): void; volume(v?: number): number };
 }
+
+declare module '*.css?inline' {
+  const css: string;
+  export default css;
+}

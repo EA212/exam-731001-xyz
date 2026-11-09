@@ -1,64 +1,26 @@
-import type { QuizQuestion } from '../lib/quiz-player';
-import { catchTheme } from './catch';
+import type { QuestQuestion, QuestChapter, QuestVariant, QuestTheme, QuestHost } from './quest/types';
+import { questTheme } from './quest';
+export { parseArticle } from './quest/parse';
 
-export interface ThemeChapter {
-  label: string;
-  href: string;
-  meta: string;
-}
+export type QuizTheme = QuestTheme;
+export type ThemeQuestion = QuestQuestion;
+export type ThemeChapter = QuestChapter;
+export type ThemeVariant = QuestVariant;
+export type ThemeHost = QuestHost;
+export interface ThemeContext { mount: HTMLElement; title: string; host: ThemeHost }
+export interface ThemeBinding { destroy(): void }
 
-export interface ThemeVariant {
-  id: string;
-  label: string;
-  questions: QuizQuestion[];
-}
-
-export interface ThemeHost {
-  questions: QuizQuestion[];
-  chapters: ThemeChapter[];
-  variants: ThemeVariant[];
-  notes?: string[];
-  load?(href: string): Promise<QuizQuestion[]>;
-  onGrade(q: QuizQuestion, pick: string, correct: boolean): void;
-  onFinish(correct: number, total: number): void;
-  onClose(): void;
-}
-
-export interface ThemeContext {
-  mount: HTMLElement;
-  title: string;
-  host: ThemeHost;
-}
-
-export interface QuizTheme {
-  id: string;
-  name: string;
-  tagline: string;
-  accent: string;
-  create(ctx: ThemeContext): () => void;
-}
-
-export interface ThemeBinding {
-  destroy(): void;
-}
-
-export const themes: QuizTheme[] = [catchTheme];
+export const themes: QuizTheme[] = [questTheme];
 
 const LOCK_ID = 'zsb-theme-lock';
 const LOCK_CSS = `html.theme-lock,html.theme-lock body{height:100%;overflow:hidden;overscroll-behavior:none;background:#05070f}
 html.theme-lock body>:not(.theme-root){display:none!important}
-.theme-root{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;overflow:hidden;touch-action:none;background:#05070f;color:#eaf0ff}
+.theme-root{position:fixed;inset:0;z-index:2147483000;display:block;overflow:hidden;background-color:#05070f}
 @media print{.theme-root{display:none!important}}`;
 
 const KEY = 'zsb.theme.v1';
-
-const read = (): string | null => {
-  try { return sessionStorage.getItem(KEY); } catch { return null; }
-};
-
-const write = (v: string | null): void => {
-  try { v === null ? sessionStorage.removeItem(KEY) : sessionStorage.setItem(KEY, v); } catch { return; }
-};
+const read = (): string | null => { try { return sessionStorage.getItem(KEY); } catch { return null; } };
+const write = (v: string | null): void => { try { v === null ? sessionStorage.removeItem(KEY) : sessionStorage.setItem(KEY, v); } catch { return; } };
 
 export function currentTheme(): QuizTheme | null {
   const q = new URLSearchParams(location.search).get('theme');
@@ -67,9 +29,7 @@ export function currentTheme(): QuizTheme | null {
   return themes.find((t) => t.id === id) ?? null;
 }
 
-export function clearTheme(): void {
-  write(null);
-}
+export function clearTheme(): void { write(null); }
 
 export function attachTheme(theme: QuizTheme, title: string, host: ThemeHost): ThemeBinding {
   document.querySelector('.theme-root')?.remove();
@@ -101,6 +61,6 @@ export function attachTheme(theme: QuizTheme, title: string, host: ThemeHost): T
     mount,
     title,
     host: { ...host, onClose: (): void => { binding.destroy(); host.onClose(); } },
-  });
+  } as ThemeContext);
   return binding;
 }

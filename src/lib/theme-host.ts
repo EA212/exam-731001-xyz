@@ -1,7 +1,6 @@
-import { parseQuestions, isGradable, type QuizContext } from './exam-quiz';
 import { markSeen, saveWrong } from './exam-store';
-import { attachTheme, clearTheme, type QuizTheme, type ThemeChapter } from '../themes';
-import type { QuizQuestion } from './quiz-player';
+import { attachTheme, clearTheme, parseArticle, type QuizTheme, type ThemeChapter } from '../themes';
+import type { QuestQuestion } from '../themes/quest/types';
 
 const docIdOf = (href: string): string =>
   href.replace(/^\/zsb\//, '').replace(/\?.*$/, '').replace(/\/$/, '') || 'index';
@@ -16,9 +15,9 @@ export function openThemeIndex(theme: QuizTheme): void {
       .join(' · '),
   }));
 
-  let current: QuizContext = { docId: 'index', docTitle: '资料库', docUrl: '/zsb/', subject: '' };
+  let current = { docId: 'index', docTitle: '资料库', docUrl: '/zsb/', subject: '' };
 
-  const load = async (href: string): Promise<QuizQuestion[]> => {
+  const load = async (href: string): Promise<QuestQuestion[]> => {
     const res = await fetch(href);
     const html = await res.text();
     const parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -30,7 +29,7 @@ export function openThemeIndex(theme: QuizTheme): void {
       docUrl: href,
       subject: parsed.querySelector('.zsb-badge.primary')?.textContent?.trim() || '',
     };
-    return parseQuestions(article, current).filter(isGradable);
+    return parseArticle(article, current.docId);
   };
 
   attachTheme(theme, '选择关卡', {

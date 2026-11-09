@@ -19,7 +19,8 @@ import {
   isCorrect,
 } from './quiz-player';
 import { normalizeObjectiveAnswer } from './taxonomy';
-import { attachTheme, currentTheme, clearTheme, type ThemeHost } from '../themes';
+import { attachTheme, currentTheme, clearTheme, parseArticle, type ThemeHost } from '../themes';
+import type { QuestQuestion } from '../themes/quest/types';
 
 export type ParsedQ = QuizQuestion & { rawAnswer: string };
 
@@ -248,16 +249,19 @@ export function initQuiz(): void {
 
   const theme = currentTheme();
   if (theme) {
-    const notes = all.filter((q) => !isGradable(q)).map((q) => q.stem.split('\n')[0]).filter(Boolean).slice(0, 40);
+    const qs = parseArticle(article, ctx.docId);
+    const byQuest = new Map<string, QuestQuestion>(qs.map((q) => [q.id, q]));
+    const wrongHere = (): QuestQuestion[] =>
+      Object.values(getWrongMap())
+        .filter((w) => w.docId === ctx.docId && !w.mastered)
+        .map((w) => byQuest.get(w.id))
+        .filter((q): q is QuestQuestion => !!q && q.kind === 'choice');
     const host: ThemeHost = {
-      questions: pool,
+      questions: qs,
       chapters: [{ label: '选择关卡', href: `/zsb/?theme=${theme.id}`, meta: '切换试卷' }],
-      variants: wrongQs().length
-        ? [{ id: 'wrong', label: `只练本卷错题（${wrongQs().length}）`, questions: wrongQs() }]
+      variants: wrongHere().length
+        ? [{ id: 'wrong', label: `只练本卷错题（${wrongHere().length}）`, questions: wrongHere() }]
         : [],
-      notes: notes.length
-        ? notes
-        : Array.from(article.querySelectorAll('h2, h3')).map((h) => (h.textContent || '').trim()).filter(Boolean).slice(0, 30),
       onGrade: hostGrade,
       onFinish: (): void => { renderDocStats(); },
       onClose: (): void => {

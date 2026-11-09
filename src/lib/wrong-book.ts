@@ -168,7 +168,7 @@ export function initWrongBook(): void {
     const theme = currentTheme();
     if (theme) {
       redoTheme = attachTheme(theme, '错题重做', {
-        questions,
+        questions: questions.map((q) => ({ ...q, kind: 'choice' as const, material: '', answerText: q.analysis, keyPoints: '' })),
         chapters: [],
         variants: [],
         onGrade: (q, _pick, ok): void => { if (ok) markWrongMastered(q.id, true); },
