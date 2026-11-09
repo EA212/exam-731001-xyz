@@ -47,7 +47,8 @@ export const themes: QuizTheme[] = [catchTheme];
 const LOCK_ID = 'zsb-theme-lock';
 const LOCK_CSS = `html.theme-lock,html.theme-lock body{height:100%;overflow:hidden;overscroll-behavior:none;background:#05070f}
 html.theme-lock body>:not(.theme-root){display:none!important}
-.theme-root{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;overflow:hidden;touch-action:none;background:#05070f;color:#eaf0ff}`;
+.theme-root{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;overflow:hidden;touch-action:none;background:#05070f;color:#eaf0ff}
+@media print{.theme-root{display:none!important}}`;
 
 const KEY = 'zsb.theme.v1';
 
