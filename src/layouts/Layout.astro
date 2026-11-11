@@ -106,5 +106,9 @@ const inWrong = path === '/zsb/wrong';
     )}
 
     <slot />
+    <script>
+      import { registerOffline } from '../lib/offline';
+      registerOffline();
+    </script>
   </body>
 </html>
