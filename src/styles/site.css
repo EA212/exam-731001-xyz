@@ -1,11 +1,26 @@
 :root {
+  color-scheme: light;
   --c-bg: #fff; --c-fg: #17191e; --c-muted: #6b7280; --c-faint: #9ca3af;
   --c-line: #e5e7eb; --c-soft: #f6f7f9;
   --c-brand: #2563eb; --c-brand-soft: #eef4ff;
   --c-ok: #15803d; --c-ok-soft: #edf8f0;
   --c-warn: #b45309; --c-warn-soft: #fdf5e8;
   --c-bad: #dc2626; --c-bad-soft: #fdf0ef;
+  --c-fg-soft: #33373f; --c-point: #7c3aed; --c-point-soft: #f5f0ff;
+  --c-on-accent: #fff; --c-shadow: rgba(17,24,39,.08);
   --radius: 8px;
+}
+
+:root[data-night="dark"] {
+  color-scheme: dark;
+  --c-bg: #000; --c-fg: #e8ebf2; --c-muted: #98a3b5; --c-faint: #6c7688;
+  --c-line: #242a36; --c-soft: #0b0e13;
+  --c-brand: #7ea6ff; --c-brand-soft: #111d33;
+  --c-ok: #56d98a; --c-ok-soft: #0a1a12;
+  --c-warn: #f5bd4b; --c-warn-soft: #1b1408;
+  --c-bad: #f8777f; --c-bad-soft: #1d0f11;
+  --c-fg-soft: #c8d0de; --c-point: #b295fb; --c-point-soft: #16102a;
+  --c-on-accent: #07101f; --c-shadow: rgba(0,0,0,.55);
 }
 
 * { box-sizing: border-box; }
@@ -34,6 +49,10 @@ main { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
 .site-nav-link { display: inline-flex; align-items: center; min-height: 52px; padding: 0 12px; color: var(--c-muted); font-size: .875rem; border-bottom: 2px solid transparent; }
 .site-nav-link.is-current { color: var(--c-brand); border-bottom-color: var(--c-brand); font-weight: 600; }
 .legacy-entry { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: var(--c-muted); font-size: .8125rem; }
+.night-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: var(--radius); background: none; color: var(--c-muted); cursor: pointer; }
+.night-toggle:hover { color: var(--c-brand); background: var(--c-soft); }
+.night-toggle svg { width: 19px; height: 19px; }
+:root[data-night="dark"] .night-toggle .i-moon, :root:not([data-night="dark"]) .night-toggle .i-sun { display: none; }
 .site-crumb { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--c-line); background: var(--c-bg); }
 .site-crumb-inner { gap: 8px; min-height: 36px; font-size: .75rem; color: var(--c-muted); }
 .site-crumb a { color: var(--c-muted); }
@@ -51,7 +70,7 @@ main { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
 .home-themes-lead { margin: 0 0 16px; color: var(--c-muted); font-size: .8125rem; line-height: 1.7; }
 .home-theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
 .home-theme { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border: 1px solid var(--c-line); border-top: 3px solid var(--accent, var(--c-brand)); border-radius: var(--radius); background: var(--c-bg); color: var(--c-fg); }
-.home-theme:hover { border-color: var(--accent, var(--c-brand)); text-decoration: none; box-shadow: 0 4px 14px rgba(17,24,39,.08); }
+.home-theme:hover { border-color: var(--accent, var(--c-brand)); text-decoration: none; box-shadow: 0 4px 14px var(--c-shadow); }
 .home-theme b { font-size: .9375rem; }
 .home-theme small { flex: 1; color: var(--c-muted); font-size: .75rem; line-height: 1.6; }
 .home-theme-go { color: var(--accent, var(--c-brand)); font-size: .75rem; }
@@ -69,8 +88,8 @@ main { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
 
 .zsb-btn, .quiz-btn, .quiz-icon-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 6px 12px; color: var(--c-fg); font-size: .8125rem; line-height: 1.4; cursor: pointer; text-decoration: none; }
 .zsb-btn:hover, .quiz-btn:hover:not(:disabled), .quiz-icon-btn:hover { border-color: var(--c-brand); color: var(--c-brand); text-decoration: none; }
-.zsb-btn.primary, .quiz-btn.primary, .zsb-chip.is-active, .quiz-chip.on { background: var(--c-brand); border-color: var(--c-brand); color: #fff; font-weight: 600; }
-.zsb-btn.primary:hover, .quiz-btn.primary:hover:not(:disabled) { color: #fff; opacity: .88; }
+.zsb-btn.primary, .quiz-btn.primary, .zsb-chip.is-active, .quiz-chip.on { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-accent); font-weight: 600; }
+.zsb-btn.primary:hover, .quiz-btn.primary:hover:not(:disabled) { color: var(--c-on-accent); opacity: .88; }
 .zsb-btn.is-disabled, .quiz-btn:disabled { opacity: .45; cursor: default; pointer-events: none; }
 .quiz-btn.ghost { background: transparent; }
 
@@ -104,7 +123,7 @@ input.zsb-chip { cursor: text; width: 148px; }
 .zsb-doc h1 { font-size: 1.375rem; margin: 4px 0 12px; }
 .zsb-doc h2 { font-size: 1.0625rem; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--c-line); }
 .zsb-doc h3 { font-size: .9375rem; margin: 20px 0 6px; }
-.zsb-doc p, .zsb-doc li { line-height: 1.8; color: #33373f; }
+.zsb-doc p, .zsb-doc li { line-height: 1.8; color: var(--c-fg-soft); }
 .zsb-doc p { margin: 10px 0; }
 .zsb-doc ul, .zsb-doc ol { padding-left: 22px; margin: 8px 0; }
 .zsb-doc hr { border: 0; border-top: 1px solid var(--c-line); margin: 24px 0; }
@@ -120,7 +139,7 @@ input.zsb-chip { cursor: text; width: 148px; }
 .zsb-doc .exam-ask { display: block; border-left-color: var(--c-brand); background: var(--c-brand-soft); }
 .zsb-doc .exam-answer { border-left-color: var(--c-ok); background: var(--c-ok-soft); }
 .zsb-doc .exam-analysis { border-left-color: var(--c-warn); background: var(--c-warn-soft); }
-.zsb-doc .exam-point { border-left-color: #7c3aed; background: #f5f0ff; }
+.zsb-doc .exam-point { border-left-color: var(--c-point); background: var(--c-point-soft); }
 .zsb-doc.show-answers .exam-answer, .zsb-doc.show-answers .exam-analysis, .zsb-doc.show-answers .exam-point { display: block; }
 
 @media print {
@@ -159,12 +178,12 @@ input.zsb-chip { cursor: text; width: 148px; }
 .quiz-opt .v { flex: 1; min-width: 0; }
 .quiz-opt-mark { flex: 0 0 auto; font-weight: 700; }
 .quiz-opt.on { border-color: var(--c-brand); background: var(--c-brand-soft); }
-.quiz-opt.on .k { background: var(--c-brand); border-color: var(--c-brand); color: #fff; }
+.quiz-opt.on .k { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-accent); }
 .quiz-opt.correct { border-color: var(--c-ok); background: var(--c-ok-soft); }
-.quiz-opt.correct .k, .quiz-opt.correct .quiz-opt-mark { background: var(--c-ok); border-color: var(--c-ok); color: #fff; }
+.quiz-opt.correct .k, .quiz-opt.correct .quiz-opt-mark { background: var(--c-ok); border-color: var(--c-ok); color: var(--c-on-accent); }
 .quiz-opt.correct .quiz-opt-mark { background: none; color: var(--c-ok); }
 .quiz-opt.wrong { border-color: var(--c-bad); background: var(--c-bad-soft); }
-.quiz-opt.wrong .k { background: var(--c-bad); border-color: var(--c-bad); color: #fff; }
+.quiz-opt.wrong .k { background: var(--c-bad); border-color: var(--c-bad); color: var(--c-on-accent); }
 .quiz-opt.wrong .quiz-opt-mark { color: var(--c-bad); }
 
 .quiz-feedback { margin-top: 12px; padding: 10px 12px; font-size: .875rem; line-height: 1.75; }
@@ -172,7 +191,7 @@ input.zsb-chip { cursor: text; width: 148px; }
 .quiz-feedback.bad { border-color: var(--c-bad); background: var(--c-bad-soft); }
 .quiz-feedback.reveal { border-color: var(--c-brand); background: var(--c-brand-soft); }
 .qf-title { display: flex; align-items: center; gap: 6px; font-weight: 650; margin-bottom: 4px; }
-.qf-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; color: #fff; font-size: .75rem; font-weight: 700; }
+.qf-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; color: var(--c-on-accent); font-size: .75rem; font-weight: 700; }
 .quiz-feedback.ok .qf-icon { background: var(--c-ok); }
 .quiz-feedback.bad .qf-icon { background: var(--c-bad); }
 .qf-answer b, .qw-line b.ok, .wb-answer b.ok { color: var(--c-ok); }
@@ -273,5 +292,7 @@ input.zsb-chip { cursor: text; width: 148px; }
   .wb-select { max-width: 100%; flex: 1 1 120px; }
   .site-header-inner { gap: 8px; padding: 0 12px; }
   .site-nav-link { padding: 0 8px; }
+  .legacy-entry { padding: 0 4px; }
+  .night-toggle { width: 34px; height: 34px; }
   .site-crumb-inner { padding: 0 12px; }
 }
